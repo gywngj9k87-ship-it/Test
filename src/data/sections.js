@@ -39,7 +39,8 @@ export const PANELS = {
     { dataset: 'sea-level', form: 'area', span: 4, upIsGood: false, decimals: 0 },
     { dataset: 'arctic-sea-ice', form: 'line', span: 6, upIsGood: true, decimals: 1 },
     { dataset: 'electricity-mix', form: 'stacked', span: 6, decimals: 1 },
-    { dataset: 'disaster-events', form: 'bar', span: 12, upIsGood: false, decimals: 0 },
+    { dataset: 'electrification-rate', form: 'area', span: 6, upIsGood: true, decimals: 1 },
+    { dataset: 'disaster-events', form: 'bar', span: 6, upIsGood: false, decimals: 0 },
   ],
   business: [
     { dataset: 'carbon-price', form: 'area', span: 6, upIsGood: true, decimals: 0 },
@@ -61,6 +62,7 @@ export const OVERVIEW_STATS = [
   { dataset: 'sea-level', upIsGood: false, decimals: 0 },
   { dataset: 'arctic-sea-ice', upIsGood: true, decimals: 1 },
   { dataset: 'electricity-mix', upIsGood: true, decimals: 1, deriveKey: 'windSolar' },
+  { dataset: 'electrification-rate', upIsGood: true, decimals: 1 },
   { dataset: 'carbon-price', upIsGood: true, decimals: 0 },
   { dataset: 'transition-investment', upIsGood: true, decimals: 0 },
   { dataset: 'living-planet-index', upIsGood: true, decimals: 0 },

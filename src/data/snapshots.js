@@ -192,6 +192,27 @@ export const electricityMix = {
   note: 'Wind and solar supplied a record ~15% of global electricity in 2024, up from under 2% in 2010. Fossil generation is plateauing as clean sources meet most new demand.',
 }
 
+// Electricity as a share of total final energy consumption (%), IEA.
+// This "electrification rate" measures how much of end-use energy is delivered
+// as electricity (vs fuels burned directly for transport, heat, industry).
+export const electrificationRate = {
+  id: 'electrification-rate',
+  title: 'Electricity share of energy use',
+  unit: '% of final energy',
+  baseline: 'Electricity in total final consumption',
+  sourceName: 'IEA',
+  sourceUrl: 'https://www.iea.org/data-and-statistics',
+  series: [
+    { year: 1990, value: 12.7 }, { year: 1995, value: 13.8 },
+    { year: 2000, value: 15.0 }, { year: 2005, value: 16.3 },
+    { year: 2010, value: 17.6 }, { year: 2015, value: 18.6 },
+    { year: 2018, value: 19.4 }, { year: 2020, value: 19.9 },
+    { year: 2021, value: 20.3 }, { year: 2022, value: 20.6 },
+    { year: 2023, value: 21.0 },
+  ],
+  note: 'Electricity now meets about a fifth of the world’s final energy use, up from ~13% in 1990. "Electrification" — shifting transport, heat and industry onto the grid — is central to decarbonisation, and the share is projected to approach one-third by 2035.',
+}
+
 // Recorded weather/climate-related disaster events per year, EM-DAT.
 export const disasterEvents = {
   id: 'disaster-events',
@@ -404,6 +425,7 @@ export const SNAPSHOTS = {
   'sea-level': seaLevel,
   'arctic-sea-ice': arcticSeaIce,
   'electricity-mix': electricityMix,
+  'electrification-rate': electrificationRate,
   'disaster-events': disasterEvents,
   'carbon-price': carbonPrice,
   'transition-investment': transitionInvestment,
