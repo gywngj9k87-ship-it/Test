@@ -47,6 +47,64 @@ from .models import (
 log = logging.getLogger(__name__)
 
 
+# ═══════════════════════ global-filter scoping ═══════════════════════
+# The dashboard's filter row (All / Portfolio / Watchlists, plus a watchlist
+# picker) narrows every scoped view to a set of contracts. Membership is
+# computed here, on conids — never on symbols (rule 1): a watchlist holding
+# SOXL.L must not drag in the US SOXL, and a portfolio short of MAGS.L must not
+# match the unleveraged US MAGS.
+
+
+class Scope(str, Enum):
+    ALL = "all"
+    PORTFOLIO = "portfolio"
+    WATCHLISTS = "watchlists"
+
+
+def watchlist_conids(
+    watchlists: Mapping[str, Iterable[Instrument]],
+    watchlist_id: str | None = None,
+) -> set[int]:
+    """Conids in one watchlist, or the union of all when no id (or 'all') is
+    given. Keyed on conid so a ticker listed on two exchanges stays two
+    distinct contracts."""
+    if watchlist_id and watchlist_id not in ("all", ""):
+        return {m.conid for m in watchlists.get(watchlist_id, [])}
+    return {m.conid for members in watchlists.values() for m in members}
+
+
+def scope_conids(
+    scope: Scope | str,
+    watchlist_id: str | None,
+    portfolio_conids: Iterable[int],
+    watchlists: Mapping[str, Iterable[Instrument]],
+) -> set[int] | None:
+    """The contracts a scoped view should show, or `None` for 'all'.
+
+    `None` (unrestricted) is deliberately distinct from an empty set (a real
+    scope that nothing is in): 'all' must never read as 'nothing matched', and
+    an empty portfolio under the Portfolio scope must show nothing rather than
+    everything.
+    """
+    s = scope if isinstance(scope, Scope) else Scope(scope)
+    if s is Scope.PORTFOLIO:
+        return set(portfolio_conids)
+    if s is Scope.WATCHLISTS:
+        return watchlist_conids(watchlists, watchlist_id)
+    return None
+
+
+def filter_by_conids(
+    rows: Sequence[DriverRow],
+    allowed: set[int] | None,
+) -> list[DriverRow]:
+    """Keep only rows whose contract is in `allowed`. `None` means unrestricted
+    (the whole list) — not the same as an empty set, which keeps nothing."""
+    if allowed is None:
+        return list(rows)
+    return [r for r in rows if r.conid in allowed]
+
+
 # ═══════════════════════ layer 1 — the index drivers ═══════════════════════
 # ~40% of S&P 500 weight and over half the Nasdaq 100. Market structure, not a
 # view: when the index moves and you don't know why, the answer is on this list.

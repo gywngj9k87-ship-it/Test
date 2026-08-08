@@ -14,7 +14,7 @@ const SCREENS = SCREEN_NAMES.map((id) => ({
 export default async function ScreensPage({
   searchParams,
 }: {
-  searchParams?: { screen?: string };
+  searchParams?: { screen?: string; scope?: string; watchlist?: string };
 }) {
   const requested = searchParams?.screen as ScreenName | undefined;
   const active: ScreenName =
@@ -22,7 +22,17 @@ export default async function ScreensPage({
       ? requested
       : ScreenName.RS_LEADERS;
 
-  const result = await getScreen(active, { revalidate: 300 });
+  // Honour the global filter row: the scope/watchlist come off the URL (set by
+  // GlobalFilters) and go straight to the backend query params, which filter
+  // the screen's rows by contract id. Undefined keys are dropped by buildUrl,
+  // so an unscoped view sends nothing.
+  const scope = searchParams?.scope;
+  const watchlist = scope === "watchlists" ? searchParams?.watchlist : undefined;
+
+  const result = await getScreen(active, {
+    revalidate: 300,
+    query: { scope, watchlist },
+  });
 
   return (
     <ScreensView

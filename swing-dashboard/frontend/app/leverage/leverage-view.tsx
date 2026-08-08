@@ -1,6 +1,7 @@
 "use client";
 
 import Card from "@/components/Card";
+import { FilterNote } from "@/components/GlobalFilters";
 import DataTable, { type Column } from "@/components/DataTable";
 import Legend from "@/components/Legend";
 import LineChart from "@/components/LineChart";
@@ -114,6 +115,7 @@ export default function LeverageView({
 
   return (
     <>
+      <FilterNote honours={[]} />
       <div className="note" style={{ marginTop: 0 }}>
         <b>Why this tab exists.</b> Leverage rewards trend and punishes chop,
         and no momentum oscillator tells you which regime you&rsquo;re in. Every

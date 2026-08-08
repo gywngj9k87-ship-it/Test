@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Card from "@/components/Card";
 import DataTable, { type Column } from "@/components/DataTable";
+import { FilterNote, useFilters } from "@/components/GlobalFilters";
 import StatusChip from "@/components/StatusChip";
 import { cls, fmt, pct } from "@/lib/format";
 import { sourceBadge, type DataSource } from "@/lib/api";
@@ -23,6 +24,16 @@ export default function ScreensView({
 }: ScreensViewProps) {
   const { badge, label: badgeLabel } = sourceBadge(source);
   const meta = screens.find((s) => s.id === active)!;
+  const { scope, watchlistId } = useFilters();
+
+  // Switching screens must keep the active scope — it lives in the URL, so the
+  // tab links carry it forward rather than resetting to the unscoped view.
+  const screenHref = (id: ScreenName) => {
+    const q = new URLSearchParams({ screen: id });
+    if (scope !== "all") q.set("scope", scope);
+    if (scope === "watchlists" && watchlistId) q.set("watchlist", watchlistId);
+    return `/screens?${q.toString()}`;
+  };
 
   const cols: Array<Column<DriverRow>> = [
     {
@@ -126,7 +137,7 @@ export default function ScreensView({
           {screens.map((s) => (
             <Link
               key={s.id}
-              href={`/screens?screen=${s.id}`}
+              href={screenHref(s.id)}
               role="tab"
               aria-selected={s.id === active}
               style={{
@@ -157,6 +168,7 @@ export default function ScreensView({
           </span>
         }
       >
+        <FilterNote honours={["scope", "watchlist"]} active={source === "live"} />
         {result.truncated_at != null ? (
           <p className="cap" style={{ margin: "-8px 0 12px" }}>
             <StatusChip
@@ -164,7 +176,10 @@ export default function ScreensView({
               label={`Capped at ${result.truncated_at}`}
             />{" "}
             This screen is truncated — there are more names behind it. Never a
-            silent cut.
+            silent cut.{" "}
+            {scope !== "all"
+              ? "The cap ran over the whole universe before this scope narrowed it, so a scoped view here can under-report."
+              : null}
           </p>
         ) : null}
         <DataTable

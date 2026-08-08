@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Card from "@/components/Card";
+import { FilterNote } from "@/components/GlobalFilters";
 import DataTable, { type Column } from "@/components/DataTable";
 import { FlagTape } from "@/components/EventTape";
 import LeverageBadge from "@/components/LeverageBadge";
@@ -152,6 +153,7 @@ export default function PortfolioView({
 
   return (
     <>
+      <FilterNote honours={[]} />
       <div className="grid g4" style={{ marginBottom: 14 }}>
         <StatTile
           label="Net liquidation"

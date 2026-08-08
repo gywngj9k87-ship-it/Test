@@ -1,6 +1,7 @@
 "use client";
 
 import Card from "@/components/Card";
+import { FilterNote } from "@/components/GlobalFilters";
 import DataTable, { type Column } from "@/components/DataTable";
 import LeverageBadge from "@/components/LeverageBadge";
 import StatusChip from "@/components/StatusChip";
@@ -138,6 +139,7 @@ export default function IncomeView({
 
   return (
     <>
+      <FilterNote honours={[]} />
       <div className="note" style={{ marginTop: 0 }}>
         <b>The &ldquo;track&rdquo; list, 100 names.</b> Shipping, preferreds and
         small-cap ADRs. Running RSI and MACD across these would mostly measure

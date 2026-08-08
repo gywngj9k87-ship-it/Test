@@ -50,6 +50,7 @@ from .models import (
 )
 from . import journal as journal_module
 from . import leverage as leverage_module
+from . import universe as universe_module
 from .portfolio import empty_snapshot
 
 log = logging.getLogger(__name__)
@@ -210,17 +211,55 @@ def get_overview(response: Response, ctx: ServiceContext = Depends(get_context))
     return overview
 
 
+def _portfolio_conids(ctx: ServiceContext) -> set[int]:
+    """Contracts currently in the book, for the Portfolio scope."""
+    snap = _coerce_one(PortfolioSnapshot, _rows(ctx, jobs_module.TBL_PORTFOLIO))
+    return {p.instrument.conid for p in snap.positions} if snap else set()
+
+
+def _watchlist_members(ctx: ServiceContext) -> dict[str, list[Instrument]]:
+    """The six watchlists as {id: [Instrument]}, for the Watchlists scope."""
+    raw = _rows(ctx, jobs_module.TBL_WATCHLISTS)
+    out: dict[str, list[Instrument]] = {}
+    if isinstance(raw, Mapping):
+        for wid, members in raw.items():
+            out[str(wid)] = _coerce_many(Instrument, members)
+    return out
+
+
 @app.get("/api/screens/{screen}", response_model=ScreenResult)
 def get_screen(screen: ScreenName, response: Response,
+               scope: universe_module.Scope = Query(
+                   universe_module.Scope.ALL,
+                   description="narrow to the book or a watchlist"),
+               watchlist: str | None = Query(
+                   None, description="watchlist id; only read when scope=watchlists"),
                ctx: ServiceContext = Depends(get_context)) -> ScreenResult:
-    """One of the eleven daily screens. `truncated_at` is populated whenever
-    the screen capped its output — never silent truncation."""
+    """One of the eleven daily screens, optionally scoped by the global filter
+    row. `truncated_at` is populated whenever the screen capped its output —
+    never silent truncation.
+
+    Scoping is applied to the cached (already-capped) screen output, on conids
+    not symbols. That means a scoped view of a *truncated* screen can under-
+    report — the cap ran over the whole universe before the scope narrowed it —
+    which is why `truncated_at` still travels with the result and the UI shows
+    both the scope and the cap. Nothing here silently claims completeness."""
     raw = _rows(ctx, jobs_module.TBL_SCREENS, screen=screen.value)
     if isinstance(raw, Mapping) and screen.value in raw:
         raw = raw[screen.value]
     result = _coerce_one(ScreenResult, raw)
+    if result is None:
+        result = ScreenResult(screen=screen, rows=[], truncated_at=None)
+
+    allowed = universe_module.scope_conids(
+        scope, watchlist, _portfolio_conids(ctx), _watchlist_members(ctx),
+    )
+    if allowed is not None:
+        result = result.model_copy(
+            update={"rows": universe_module.filter_by_conids(result.rows, allowed)}
+        )
     _mark(response, _stale(ctx, jobs_module.TBL_SCREENS, raw, screen.value), raw)
-    return result or ScreenResult(screen=screen, rows=[], truncated_at=None)
+    return result
 
 
 @app.get("/api/instrument/{conid}", response_model=IndicatorSet)

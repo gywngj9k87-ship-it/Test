@@ -625,6 +625,62 @@ class TestScreenTruncation:
 
 
 # ═══════════════════════════════════════════════════════════════════
+# 3b · global-filter scoping — on conids, never symbols
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _driver(conid: int, symbol: str = "X", exchange: str = "NASDAQ"):
+    from app.models import DriverRow
+    return DriverRow(
+        conid=conid, symbol=symbol, exchange=exchange, last=100.0,
+        return_1w=0.0, return_4w=0.0, return_13w=0.0, rs_vs_index_13w=0.0,
+        above_50dma=True, pct_from_high=0.0, at_new_high=False,
+    )
+
+
+class TestScopeFiltering:
+    """The filter row narrows a view to the book or a watchlist. Because a
+    ticker can be two contracts, membership is a set of conids, not symbols."""
+
+    # SOXL on two exchanges — same symbol, two different contracts.
+    WATCHLISTS = {
+        "swing": [_inst(693388387, "SOXL", "LSEETF"), _inst(4815747, "NVDA")],
+        "track": [_inst(280610839, "KKR", "NYSE")],
+    }
+
+    def test_all_scope_is_unrestricted_not_empty(self):
+        """'all' must return None (whole list), never an empty set — an empty
+        set would read as 'nothing qualified', a different claim."""
+        assert uni_mod.scope_conids("all", None, [1, 2], self.WATCHLISTS) is None
+
+    def test_portfolio_scope_is_the_held_contracts(self):
+        got = uni_mod.scope_conids("portfolio", None, [4815747, 280610839], self.WATCHLISTS)
+        assert got == {4815747, 280610839}
+
+    def test_watchlists_scope_picks_one_list_by_id(self):
+        assert uni_mod.scope_conids("watchlists", "track", [], self.WATCHLISTS) == {280610839}
+
+    def test_watchlists_scope_unions_when_no_id_given(self):
+        got = uni_mod.scope_conids("watchlists", None, [], self.WATCHLISTS)
+        assert got == {693388387, 4815747, 280610839}
+
+    def test_filter_keeps_only_in_scope_rows_by_conid(self):
+        rows = [_driver(693388387, "SOXL", "LSEETF"), _driver(73340487, "SOXL", "ARCA")]
+        # scope holds only the LSE SOXL; the US SOXL shares the symbol but not the id
+        kept = uni_mod.filter_by_conids(rows, {693388387})
+        assert [r.conid for r in kept] == [693388387]
+
+    def test_none_allowed_returns_every_row(self):
+        rows = [_driver(1), _driver(2)]
+        assert uni_mod.filter_by_conids(rows, None) == rows
+
+    def test_empty_scope_keeps_nothing(self):
+        """An in-scope set that is empty (e.g. an empty book) shows no rows,
+        rather than falling through to everything."""
+        assert uni_mod.filter_by_conids([_driver(1)], set()) == []
+
+
+# ═══════════════════════════════════════════════════════════════════
 # 4 · universe assembly and sleeve routing (mocked IBKR)
 # ═══════════════════════════════════════════════════════════════════
 

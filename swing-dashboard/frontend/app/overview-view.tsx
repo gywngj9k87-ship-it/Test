@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Card from "@/components/Card";
+import { FilterNote } from "@/components/GlobalFilters";
 import DataTable, { type Column } from "@/components/DataTable";
 import EventTape from "@/components/EventTape";
 import Legend from "@/components/Legend";
@@ -186,6 +187,7 @@ export default function OverviewView({
 
   return (
     <>
+      <FilterNote honours={[]} />
       <div className="grid g4" style={{ marginBottom: 14 }}>
         <StatTile
           label="S&P 500"
