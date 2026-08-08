@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 .env
 data/*.duckdb
+data/*.duckdb.wal
 node_modules/
 .next/
 out/
