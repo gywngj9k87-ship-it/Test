@@ -31,6 +31,8 @@ import type {
   IndicatorSet,
   Instrument,
   InstrumentDetail,
+  JournalEntry,
+  JournalStats,
   LeverageView,
   MarketEvent,
   MarketOverview,
@@ -4089,3 +4091,110 @@ export const MOCK_BOOK_SHAPE: Array<[string, string]> = [
   ['Portfolio beta vs SPY', '1.24 (est.)'],
   ['Unrealised P&L', '−$7,137.46'],
 ];
+
+// ─────────────────── trade journal (§ compounding feature) ───────────────────
+// Nine entries — three setup-score buckets, seven closed and two open. These
+// mirror the backend fixture in tests/test_services.py; MOCK_JOURNAL_STATS
+// below is exactly what backend/app/journal.summarize() returns for them, so
+// the offline page shows the same numbers the API would. Real IBKR conids
+// where known; the point of the sleeve is the setup-score → outcome link.
+export const MOCK_JOURNAL: JournalEntry[] = [
+  {
+    id: 'j-nvda-0714', conid: 4815747, symbol: 'NVDA',
+    opened_at: '2026-07-14T13:32:00Z', closed_at: '2026-07-28T14:10:00Z',
+    direction: 'long', entry_price: 118.4, exit_price: 131.2, size: 40,
+    thesis: 'Oversold bounce off a rising 50-day into a semis breadth thrust.',
+    exit_reason: 'Target hit; RSI stretched above 78.',
+    realized_pnl: 1240.0, r_multiple: 2.4,
+    entry_snapshot: { setup_score: 82, rsi14: 34.1, adx14: 27.5, rel_volume: 1.8, above_ema200: 1 },
+  },
+  {
+    id: 'j-avgo-0716', conid: 28352738, symbol: 'AVGO',
+    opened_at: '2026-07-16T13:40:00Z', closed_at: '2026-08-01T15:02:00Z',
+    direction: 'long', entry_price: 142.0, exit_price: 150.9, size: 30,
+    thesis: 'Pullback to the 20-EMA holding, RS line making new highs.',
+    exit_reason: 'Trailed out below the 10-EMA.',
+    realized_pnl: 560.0, r_multiple: 1.1,
+    entry_snapshot: { setup_score: 74, rsi14: 46.2, adx14: 23.1, rel_volume: 1.3, above_ema200: 1 },
+  },
+  {
+    id: 'j-soxl-0705', conid: 693388387, symbol: 'SOXL',
+    opened_at: '2026-07-05T13:35:00Z', closed_at: '2026-07-09T13:50:00Z',
+    direction: 'long', entry_price: 41.5, exit_price: 39.1, size: 200,
+    thesis: '4× LSE semis long into strength — leverage sleeve, tight leash.',
+    exit_reason: 'Stop hit next session; chop, not trend.',
+    realized_pnl: -480.0, r_multiple: -1.0,
+    entry_snapshot: { setup_score: 71, rsi14: 61.0, adx14: 18.4, rel_volume: 2.2, above_ema200: 1 },
+  },
+  {
+    id: 'j-kkr-0620', conid: 280610839, symbol: 'KKR',
+    opened_at: '2026-06-20T13:33:00Z', closed_at: '2026-07-10T18:20:00Z',
+    direction: 'long', entry_price: 98.2, exit_price: 100.6, size: 60,
+    thesis: 'Base breakout on a quiet tape; add to the core.',
+    exit_reason: 'Partial target; drifted, closed flat-ish.',
+    realized_pnl: 180.0, r_multiple: 0.6,
+    entry_snapshot: { setup_score: 58, rsi14: 55.3, adx14: 15.0, rel_volume: 0.9, above_ema200: 1 },
+  },
+  {
+    id: 'j-baba-0624', conid: 110000001, symbol: 'BABA',
+    opened_at: '2026-06-24T13:31:00Z', closed_at: '2026-07-02T14:00:00Z',
+    direction: 'long', entry_price: 84.0, exit_price: 80.2, size: 80,
+    thesis: 'Reversal attempt at prior support.',
+    exit_reason: 'Support broke; stopped.',
+    realized_pnl: -300.0, r_multiple: -1.0,
+    entry_snapshot: { setup_score: 52, rsi14: 41.0, adx14: 14.2, rel_volume: 1.1, above_ema200: 0 },
+  },
+  {
+    id: 'j-pltr-0708', conid: 444857009, symbol: 'PLTR',
+    opened_at: '2026-07-08T13:45:00Z', closed_at: '2026-07-15T15:30:00Z',
+    direction: 'long', entry_price: 28.5, exit_price: 26.7, size: 150,
+    thesis: 'Chased a gap; no real base underneath.',
+    exit_reason: 'Faded straight back; stopped.',
+    realized_pnl: -220.0, r_multiple: -1.0,
+    entry_snapshot: { setup_score: 41, rsi14: 68.0, adx14: 12.0, rel_volume: 3.1, above_ema200: 0 },
+  },
+  {
+    id: 'j-tsla-0718', conid: 76792991, symbol: 'TSLA',
+    opened_at: '2026-07-18T14:05:00Z', closed_at: '2026-07-22T14:40:00Z',
+    direction: 'long', entry_price: 210.0, exit_price: 214.5, size: 20,
+    thesis: 'Countertrend scalp against the 200-day — low conviction.',
+    exit_reason: 'Took the quick pop.',
+    realized_pnl: 90.0, r_multiple: 0.3,
+    entry_snapshot: { setup_score: 38, rsi14: 52.0, adx14: 11.5, rel_volume: 1.0, above_ema200: 0 },
+  },
+  {
+    id: 'j-asml-0730', conid: 117589399, symbol: 'ASML',
+    opened_at: '2026-07-30T13:36:00Z', closed_at: null,
+    direction: 'long', entry_price: 680.0, exit_price: null, size: 8,
+    thesis: 'EU semis leader reclaiming the 50-day; holding into earnings drift.',
+    exit_reason: null, realized_pnl: null, r_multiple: null,
+    entry_snapshot: { setup_score: 68, rsi14: 49.0, adx14: 21.0, rel_volume: 1.2, above_ema200: 1 },
+  },
+  {
+    id: 'j-msft-0805', conid: 272093, symbol: 'MSFT',
+    opened_at: '2026-08-05T13:31:00Z', closed_at: null,
+    direction: 'long', entry_price: 402.0, exit_price: null, size: 15,
+    thesis: 'Tight flag under the highs, RS positive; core add.',
+    exit_reason: null, realized_pnl: null, r_multiple: null,
+    entry_snapshot: { setup_score: 76, rsi14: 57.0, adx14: 24.0, rel_volume: 1.1, above_ema200: 1 },
+  },
+];
+
+/** Exactly what journal.summarize(MOCK_JOURNAL) returns on the backend. */
+export const MOCK_JOURNAL_STATS: JournalStats = {
+  total_entries: 9,
+  open_positions: 2,
+  closed_trades: 7,
+  win_rate: 0.5714,
+  avg_win_r: 1.1,
+  avg_loss_r: -1.0,
+  expectancy_r: 0.2,
+  total_realized_pnl: 1070.0,
+  best_setup: 'strong (score ≥ 70)',
+  by_setup: [
+    { setup: 'strong (score ≥ 70)', trades: 3, wins: 2, win_rate: 0.6667, avg_win_r: 1.75, avg_loss_r: -1.0, expectancy_r: 0.83, total_pnl: 1320.0 },
+    { setup: 'moderate (50–69)', trades: 2, wins: 1, win_rate: 0.5, avg_win_r: 0.6, avg_loss_r: -1.0, expectancy_r: -0.2, total_pnl: -120.0 },
+    { setup: 'weak (score < 50)', trades: 2, wins: 1, win_rate: 0.5, avg_win_r: 0.3, avg_loss_r: -1.0, expectancy_r: -0.35, total_pnl: -130.0 },
+  ],
+  sample_warning: '7 closed trade(s) — under ~20 the per-setup breakdown is provisional, not a verdict.',
+};

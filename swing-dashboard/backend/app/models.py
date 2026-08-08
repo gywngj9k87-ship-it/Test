@@ -513,3 +513,40 @@ class JournalEntry(BaseModel):
     entry_snapshot: dict[str, float] = Field(default_factory=dict)
     realized_pnl: float | None = None
     r_multiple: float | None = None
+
+
+class SetupPerformance(BaseModel):
+    """How one class of setup has actually performed, in the user's own trades.
+
+    A `setup` is a bucket of the app's own setup score at entry — the point is
+    to check whether the score the dashboard shows predicts the outcomes the
+    user actually gets. R-multiple stats cover only closed trades that recorded
+    an `r_multiple`; `total_pnl` covers every closed trade with a realised P&L.
+    """
+    setup: str
+    trades: int                          # closed trades in this bucket
+    wins: int
+    win_rate: float                      # 0..1, over trades with a known outcome
+    avg_win_r: float                     # mean R of winners (0 if none)
+    avg_loss_r: float                    # mean R of losers, <= 0 (0 if none)
+    expectancy_r: float                  # mean R across the bucket — the number
+    total_pnl: float
+
+
+class JournalStats(BaseModel):
+    """The compounding feature: after ~20 trades this says which of the user's
+    own setups actually work. Everything here is derived from `JournalEntry`
+    rows — no new data, just the aggregation the raw log cannot show."""
+    total_entries: int
+    open_positions: int
+    closed_trades: int
+    win_rate: float | None = None        # None until a trade with an outcome closes
+    avg_win_r: float | None = None
+    avg_loss_r: float | None = None
+    expectancy_r: float | None = None
+    total_realized_pnl: float
+    best_setup: str | None = None        # highest-expectancy bucket at min sample
+    by_setup: list[SetupPerformance] = Field(default_factory=list)
+    # Set while the sample is too thin to trust — the breakdown is provisional
+    # under ~20 closed trades. Reported, never silently omitted.
+    sample_warning: str | None = None

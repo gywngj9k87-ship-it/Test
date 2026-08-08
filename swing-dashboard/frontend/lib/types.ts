@@ -662,3 +662,58 @@ export interface PeerRow {
   atr_pct: number | null;
   setup_score: number | null;
 }
+
+// ─────────────────────────── trade journal ───────────────────────────
+// Mirrors backend/app/models.py — JournalEntry / SetupPerformance / JournalStats.
+
+/**
+ * One trade, with the app's indicator state snapshotted at entry. The journal
+ * is the feature that compounds: after ~20 trades the snapshot lets the
+ * dashboard say which of *your own* setups actually work. Keyed on conid.
+ */
+export interface JournalEntry {
+  id: string;
+  conid: number;
+  symbol: string;
+  /** ISO datetime. */
+  opened_at: string;
+  closed_at: string | null;
+  direction: 'long' | 'short';
+  entry_price: number;
+  exit_price: number | null;
+  size: number;
+  thesis: string;
+  exit_reason: string | null;
+  /** Indicator values at entry — e.g. { setup_score, rsi14, adx14, rel_volume }. */
+  entry_snapshot: Record<string, number>;
+  realized_pnl: number | null;
+  r_multiple: number | null;
+}
+
+/** How one setup-score bucket has actually performed in the user's trades. */
+export interface SetupPerformance {
+  setup: string;
+  trades: number;
+  wins: number;
+  win_rate: number;        // 0..1
+  avg_win_r: number;
+  avg_loss_r: number;      // <= 0
+  expectancy_r: number;    // mean R across the bucket — the number
+  total_pnl: number;
+}
+
+/** Aggregated journal performance, grouped by the app's setup score at entry. */
+export interface JournalStats {
+  total_entries: number;
+  open_positions: number;
+  closed_trades: number;
+  win_rate: number | null;
+  avg_win_r: number | null;
+  avg_loss_r: number | null;
+  expectancy_r: number | null;
+  total_realized_pnl: number;
+  best_setup: string | null;
+  by_setup: SetupPerformance[];
+  /** Set while the sample is too thin to trust. Rendered, never swallowed. */
+  sample_warning: string | null;
+}

@@ -38,6 +38,7 @@ from .models import (
     IndicatorSet,
     Instrument,
     JournalEntry,
+    JournalStats,
     LeverageAnalysis,
     MarketEvent,
     MarketOverview,
@@ -47,6 +48,7 @@ from .models import (
     ScreenResult,
     TickerCollision,
 )
+from . import journal as journal_module
 from . import leverage as leverage_module
 from .portfolio import empty_snapshot
 
@@ -411,6 +413,16 @@ def get_journal(response: Response, conid: int | None = Query(None),
     rows.sort(key=lambda r: r.opened_at, reverse=True)
     _mark(response, False, None)
     return rows
+
+
+@app.get("/api/journal/stats", response_model=JournalStats)
+def get_journal_stats(ctx: ServiceContext = Depends(get_context)) -> JournalStats:
+    """Which of the user's own setups actually work: closed-trade performance
+    grouped by the app's setup score at entry. Derived from the journal rows,
+    not a separate feed — declared before nothing that could shadow it, but
+    kept a literal path so it never reads as a journal id."""
+    entries = _coerce_many(JournalEntry, _rows(ctx, "journal"))
+    return journal_module.summarize(entries)
 
 
 @app.post("/api/journal", response_model=JournalEntry)

@@ -16,6 +16,8 @@ import {
   MOCK_COLLISIONS,
   MOCK_EVENTS,
   MOCK_INCOME,
+  MOCK_JOURNAL,
+  MOCK_JOURNAL_STATS,
   MOCK_LEVERAGE,
   MOCK_OVERVIEW,
   MOCK_PORTFOLIO,
@@ -27,6 +29,8 @@ import {
 import type {
   IncomeRow,
   InstrumentDetail,
+  JournalEntry,
+  JournalStats,
   LeverageView,
   MarketEvent,
   MarketOverview,
@@ -171,6 +175,37 @@ export function getEvents(opts?: FetchOptions): Promise<ApiResult<MarketEvent[]>
 /** GET /api/watchlists */
 export function getWatchlists(opts?: FetchOptions): Promise<ApiResult<Watchlist[]>> {
   return withFallback('/api/watchlists', MOCK_WATCHLISTS, opts);
+}
+
+/** GET /api/journal — the trade log, newest first. */
+export function getJournal(opts?: FetchOptions): Promise<ApiResult<JournalEntry[]>> {
+  return withFallback('/api/journal', MOCK_JOURNAL, opts);
+}
+
+/**
+ * GET /api/journal/stats — closed-trade performance grouped by the app's setup
+ * score at entry. The compounding feature: which of your setups actually work.
+ */
+export function getJournalStats(opts?: FetchOptions): Promise<ApiResult<JournalStats>> {
+  return withFallback('/api/journal/stats', MOCK_JOURNAL_STATS, opts);
+}
+
+/**
+ * POST /api/journal — persist a new or edited entry. Unlike the GETs this has
+ * no offline fallback: writing to a mock is a lie, so it throws when the API is
+ * unreachable and the caller surfaces that. Client-only (uses no-store).
+ */
+export async function postJournal(entry: JournalEntry): Promise<JournalEntry> {
+  const res = await fetch(buildUrl('/api/journal'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    cache: 'no-store',
+    body: JSON.stringify(entry),
+  });
+  if (!res.ok) {
+    throw new Error(`POST /api/journal → HTTP ${res.status} ${res.statusText}`);
+  }
+  return (await res.json()) as JournalEntry;
 }
 
 export { DEFAULT_CONID };

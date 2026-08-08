@@ -21,6 +21,7 @@ const TABS: Array<{ href: string; label: string; match: (p: string) => boolean }
   { href: '/portfolio', label: 'Portfolio', match: (p) => p.startsWith('/portfolio') },
   { href: '/leverage', label: 'Leverage', match: (p) => p.startsWith('/leverage') },
   { href: '/income', label: 'Income sleeve', match: (p) => p.startsWith('/income') },
+  { href: '/journal', label: 'Journal', match: (p) => p.startsWith('/journal') },
 ];
 
 export default function TabNav() {

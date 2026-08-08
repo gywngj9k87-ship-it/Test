@@ -19,6 +19,7 @@ import pytest
 from app import breadth as breadth_mod
 from app import events as events_mod
 from app import income as income_mod
+from app import journal as journal_mod
 from app import leverage as lev_mod
 from app import portfolio as pf_mod
 from app import universe as uni_mod
@@ -29,6 +30,7 @@ from app.models import (
     EventClass,
     IncomeRow,
     Instrument,
+    JournalEntry,
     ScreenName,
     Severity,
 )
@@ -370,6 +372,105 @@ class TestTickerCollisions:
             collisions={"ZZZ": [999999]}, leveraged={}, unleveraged={},
         )
         assert rows == []
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 1c · the trade journal — the feature that compounds
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _entry(score, r, pnl, *, closed=True, **kw) -> JournalEntry:
+    """A journal entry with only the fields the analytics read set explicitly —
+    setup score at entry, realised R, realised P&L, open/closed."""
+    base = dict(
+        id=kw.pop("id", f"e-{score}-{r}"),
+        conid=kw.pop("conid", 1), symbol=kw.pop("symbol", "TEST"),
+        opened_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
+        entry_price=100.0, size=10.0, thesis="—",
+        entry_snapshot=({} if score is None else {"setup_score": float(score)}),
+    )
+    if closed:
+        base.update(
+            closed_at=datetime(2026, 7, 8, tzinfo=timezone.utc),
+            exit_price=110.0, realized_pnl=pnl, r_multiple=r,
+        )
+    base.update(kw)
+    return JournalEntry(**base)
+
+
+# The nine entries the frontend mock mirrors verbatim — three setup-score
+# buckets, seven closed and two open. The numbers below are the asserted
+# contract: MOCK_JOURNAL_STATS in the front end must reproduce them exactly.
+JOURNAL_FIXTURE = [
+    _entry(82, 2.4, 1240.0, symbol="NVDA"),   # strong
+    _entry(74, 1.1, 560.0, symbol="AVGO"),    # strong
+    _entry(71, -1.0, -480.0, symbol="SOXL"),  # strong (a losing strong setup)
+    _entry(58, 0.6, 180.0, symbol="KKR"),     # moderate
+    _entry(52, -1.0, -300.0, symbol="BABA"),  # moderate
+    _entry(41, -1.0, -220.0, symbol="PLTR"),  # weak
+    _entry(38, 0.3, 90.0, symbol="TSLA"),     # weak (a lucky weak setup)
+    _entry(68, None, None, symbol="ASML", closed=False),  # open
+    _entry(76, None, None, symbol="MSFT", closed=False),  # open
+]
+
+
+class TestJournalStats:
+    """Grouping realised outcomes by the app's own setup score turns the log
+    into a running back-test of the dashboard's signal. These values are the
+    frontend/back-end contract for the journal mock."""
+
+    def test_headline_counts_split_open_from_closed(self):
+        s = journal_mod.summarize(JOURNAL_FIXTURE)
+        assert (s.total_entries, s.open_positions, s.closed_trades) == (9, 2, 7)
+
+    def test_overall_win_rate_and_expectancy(self):
+        s = journal_mod.summarize(JOURNAL_FIXTURE)
+        assert s.win_rate == 0.5714            # 4 of 7 closed trades green
+        assert s.expectancy_r == 0.2           # mean R across the seven
+        assert s.avg_win_r == 1.1 and s.avg_loss_r == -1.0
+        assert s.total_realized_pnl == 1070.0
+
+    def test_strong_setups_outearn_weak_ones(self):
+        """The whole point: the app's high-score entries have positive
+        expectancy while the low-score ones do not."""
+        s = journal_mod.summarize(JOURNAL_FIXTURE)
+        by = {p.setup: p for p in s.by_setup}
+        assert by["strong (score ≥ 70)"].expectancy_r == 0.83
+        assert by["moderate (50–69)"].expectancy_r == -0.2
+        assert by["weak (score < 50)"].expectancy_r == -0.35
+        assert s.best_setup == "strong (score ≥ 70)"
+
+    def test_buckets_are_ordered_strongest_first(self):
+        s = journal_mod.summarize(JOURNAL_FIXTURE)
+        assert [p.setup for p in s.by_setup] == [
+            "strong (score ≥ 70)", "moderate (50–69)", "weak (score < 50)",
+        ]
+
+    def test_thin_sample_is_flagged_not_hidden(self):
+        s = journal_mod.summarize(JOURNAL_FIXTURE)
+        assert s.sample_warning is not None and "provisional" in s.sample_warning
+
+    def test_best_setup_needs_the_minimum_sample(self):
+        """Moderate and weak have two closed trades each; with strong removed
+        no bucket clears the floor, so nothing is crowned rather than crowning
+        a two-trade fluke."""
+        no_strong = [e for e in JOURNAL_FIXTURE
+                     if (e.entry_snapshot.get("setup_score", 0) < 70)]
+        assert journal_mod.summarize(no_strong).best_setup is None
+
+    def test_empty_journal_measures_nothing_rather_than_dividing_by_zero(self):
+        s = journal_mod.summarize([])
+        assert s.closed_trades == 0 and s.win_rate is None
+        assert s.expectancy_r is None and s.total_realized_pnl == 0.0
+        assert "No closed trades" in (s.sample_warning or "")
+
+    def test_closed_trade_without_r_counts_in_pnl_but_not_rate(self):
+        e = _entry(80, None, 500.0)          # closed, P&L but no R recorded
+        e.r_multiple = None
+        s = journal_mod.summarize([e])
+        assert s.closed_trades == 1
+        assert s.win_rate is None            # no R → no rate
+        assert s.total_realized_pnl == 500.0
 
 
 # ═══════════════════════════════════════════════════════════════════
