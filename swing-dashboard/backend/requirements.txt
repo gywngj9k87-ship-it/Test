@@ -1,0 +1,31 @@
+# Swing / income / leverage dashboard — Python service layer.
+# Pinned: the indicator numbers in tests/test_services.py are regression values
+# measured against real IBKR data, so a silent pandas/numpy upgrade is a change
+# to the product, not just to the environment.
+
+# ── web ──
+fastapi==0.141.1
+uvicorn==0.46.0
+httpx==0.28.1
+
+# ── contract / config ──
+pydantic==2.13.3
+pydantic-settings==2.14.0
+
+# ── computation ──
+pandas==3.0.2
+numpy==2.4.4
+
+# ── cache ──
+duckdb==1.5.5
+
+# ── sources ──
+ib_async==2.1.0            # IBKR, read-only. PRIMARY: covers LSE/FWB/KRX/TSE.
+yfinance==1.5.2            # fundamentals + the second price series for cross-checks
+finnhub-python==2.4.29     # headlines, analyst actions, earnings surprises
+
+# ── scheduling ──
+APScheduler==3.11.3
+
+# ── tests ──
+pytest==9.1.1
