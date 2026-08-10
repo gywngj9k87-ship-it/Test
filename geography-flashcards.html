@@ -170,13 +170,19 @@ const COUNTRIES = [{"c":"af","n":"Afghanistan","cap":"Kabul","ct":"Asia","cur":"
 const CONTINENTS = ["Africa","Asia","Europe","North America","South America","Oceania"];
 const CONT_ICON = {"Africa":"🦁","Asia":"🏯","Europe":"🏰","North America":"🗽","South America":"🦜","Oceania":"🏝️"};
 
-// A friendly, globe-spanning subset for age 6 (and a gentle default everywhere).
+// A big, globe-spanning "greatest hits" subset — the well-known countries,
+// used as the gentle default (recommended for age 6) alongside All 195.
 const FAMOUS = new Set([
-  "us","ca","mx","br","ar","cl","co","pe","cu","jm",
-  "gb","fr","de","it","es","pt","ie","nl","se","gr","ch","ru","no","pl","be","at","dk","fi",
-  "eg","za","ng","ke","ma","gh","et","tz",
-  "cn","jp","in","kr","th","id","sa","ae","tr","vn","ph","pk","il","sg",
-  "au","nz","fj"]);
+  // Americas
+  "us","ca","mx","br","ar","cl","co","pe","cu","jm","ve","ec","bo","uy","cr","gt","pa","do","ht","tt",
+  // Europe
+  "gb","fr","de","it","es","pt","ie","nl","se","gr","ch","ru","no","pl","be","at","dk","fi","cz","hu","ro","ua","is","hr","rs","va","mc",
+  // Africa
+  "eg","za","ng","ke","ma","gh","et","tz","dz","tn","ly","sn","ug","zw","rw","mg","ao","na","bw",
+  // Asia
+  "cn","jp","in","kr","th","id","sa","ae","tr","vn","ph","pk","il","sg","jo","lb","iq","ir","af","bd","lk","np","mm","my","kh","kz","qa","kw",
+  // Oceania
+  "au","nz","fj","pg"]);
 
 const FLAGMAP = {}; COUNTRIES.forEach(o=> FLAGMAP[o.c]=o.f);
 function flagImg(code){ const s=FLAGMAP[code]; return s?`<img class="flagpic" alt="national flag" src="${s}">`:""; }
