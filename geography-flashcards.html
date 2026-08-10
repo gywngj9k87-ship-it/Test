@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="description" content="World Explorer — a geography flashcard & quiz game for kids. Continents, oceans, countries, capitals, languages, currencies, rivers, landmarks and flags, with two age modes and a timed quiz." />
+<title>🌍 World Explorer — Geography Flashcards & Quiz</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🌍</text></svg>" />
+<style>
+  /* ---------------------------------------------------------------
+     World Explorer — self-contained geography game for kids.
+     Two age modes (6 & under, 10), learn cards in sets of 10, then a
+     timed multiple-choice quiz. All visuals are inline SVG so the whole
+     thing is one offline file.
+  ---------------------------------------------------------------- */
+  :root {
+    --bg1:#2b6cff; --bg2:#7b3ff2; --bg3:#00c2a8;
+    --ink:#12233b; --muted:#5a6b82;
+    --card:#ffffff; --cardEdge:#e7edf6;
+    --brand:#2b6cff; --brand2:#7b3ff2;
+    --good:#18b26b; --goodBg:#e6f8ef;
+    --bad:#e8483d;  --badBg:#fdeceb;
+    --warn:#ff9f1c;
+    --shadow:0 10px 30px rgba(20,40,80,.16);
+    --radius:22px;
+    --font: ui-rounded, "Segoe UI Rounded", "SF Pro Rounded", "Nunito",
+            "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; }
+  body {
+    font-family:var(--font); color:var(--ink);
+    background:linear-gradient(135deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    min-height:100dvh; padding:16px;
+    display:flex; align-items:flex-start; justify-content:center;
+  }
+  .app {
+    width:100%; max-width:920px; margin:0 auto;
+  }
+
+  /* ---- Top bar ---- */
+  .topbar {
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    color:#fff; margin-bottom:14px;
+  }
+  .logo { font-size:1.5rem; font-weight:900; letter-spacing:.3px;
+    display:flex; align-items:center; gap:.5rem; text-shadow:0 2px 10px rgba(0,0,0,.2); }
+  .logo .globe { font-size:1.7rem; animation:spin 18s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spacer { flex:1; }
+  .pill {
+    background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35);
+    color:#fff; padding:8px 14px; border-radius:999px; font-weight:800;
+    font-size:.9rem; backdrop-filter:blur(6px); display:inline-flex; align-items:center; gap:.4rem;
+  }
+  .ghost-btn {
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.4);
+    color:#fff; padding:8px 14px; border-radius:999px; font-weight:800; cursor:pointer;
+    font-size:.9rem; transition:transform .08s, background .15s;
+  }
+  .ghost-btn:hover { background:rgba(255,255,255,.3); }
+  .ghost-btn:active { transform:scale(.96); }
+
+  /* ---- Panels ---- */
+  .panel {
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:22px; border:1px solid var(--cardEdge);
+  }
+  h1,h2,h3 { margin:0 0 6px; line-height:1.15; }
+  .lead { color:var(--muted); margin:0 0 18px; font-weight:600; }
+
+  /* ---- Age chooser ---- */
+  .age-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .age-card {
+    border:3px solid var(--cardEdge); border-radius:20px; padding:22px; cursor:pointer;
+    background:#fbfcff; text-align:center; transition:transform .1s, border-color .15s, box-shadow .15s;
+  }
+  .age-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); border-color:var(--brand); }
+  .age-card .emoji { font-size:3rem; }
+  .age-card .who { font-weight:900; font-size:1.35rem; margin-top:6px; }
+  .age-card .desc { color:var(--muted); font-size:.92rem; margin-top:6px; font-weight:600; }
+  .age-card.six:hover { border-color:var(--good); }
+
+  /* ---- Topic grid ---- */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
+  .topic {
+    border:2px solid var(--cardEdge); border-radius:18px; padding:16px 12px; cursor:pointer;
+    background:#fbfcff; text-align:center; transition:transform .1s, box-shadow .15s, border-color .15s;
+  }
+  .topic:hover { transform:translateY(-3px); box-shadow:var(--shadow); border-color:var(--brand); }
+  .topic .ic { font-size:2.1rem; }
+  .topic .nm { font-weight:800; margin-top:6px; font-size:.98rem; }
+  .topic .ct { color:var(--muted); font-size:.78rem; font-weight:700; margin-top:2px; }
+  .topic.all { background:linear-gradient(135deg,#eef3ff,#f6efff); border-color:#d9e2ff; }
+
+  /* ---- Buttons ---- */
+  .btn {
+    appearance:none; border:none; cursor:pointer; font-family:inherit;
+    background:linear-gradient(135deg,var(--brand),var(--brand2));
+    color:#fff; font-weight:900; font-size:1.05rem; padding:14px 22px; border-radius:16px;
+    box-shadow:0 8px 20px rgba(43,108,255,.35); transition:transform .08s, filter .15s;
+  }
+  .btn:hover { filter:brightness(1.05); }
+  .btn:active { transform:scale(.97); }
+  .btn.big { width:100%; font-size:1.15rem; padding:16px; }
+  .btn.green { background:linear-gradient(135deg,#18b26b,#0ea36a); box-shadow:0 8px 20px rgba(24,178,107,.35); }
+  .btn.soft { background:#eef3ff; color:var(--brand); box-shadow:none; }
+  .btn.soft:hover { background:#e2ebff; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .row.end { justify-content:flex-end; }
+  .row.between { justify-content:space-between; }
+
+  /* ---- Learn: flip cards in sets of 10 ---- */
+  .learn-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .setbadge { background:#eef3ff; color:var(--brand); font-weight:900; padding:8px 14px; border-radius:999px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+  .flip { perspective:1000px; height:190px; cursor:pointer; }
+  .flip-inner { position:relative; width:100%; height:100%; transition:transform .5s; transform-style:preserve-3d; }
+  .flip.flipped .flip-inner { transform:rotateY(180deg); }
+  .face {
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:18px;
+    border:2px solid var(--cardEdge); background:#fff; padding:12px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    box-shadow:0 6px 16px rgba(20,40,80,.08);
+  }
+  .face .visual { width:100%; height:74px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
+  .face .visual svg { max-height:74px; max-width:100%; border-radius:6px; }
+  .face .q { font-weight:800; font-size:.98rem; }
+  .face .tapme { color:var(--muted); font-size:.72rem; font-weight:700; margin-top:8px; }
+  .back {
+    transform:rotateY(180deg);
+    background:linear-gradient(135deg,#eafff4,#e9f2ff); border-color:#cdeedd;
+  }
+  .back .a { font-weight:900; font-size:1.1rem; color:var(--good); }
+  .back .fact { color:var(--muted); font-size:.8rem; font-weight:600; margin-top:8px; line-height:1.3; }
+
+  /* ---- Quiz ---- */
+  .progress { height:12px; background:#eef2f8; border-radius:999px; overflow:hidden; margin:4px 0 6px; }
+  .progress > i { display:block; height:100%; background:linear-gradient(90deg,var(--brand),var(--brand2)); border-radius:999px; transition:width .3s; }
+  .timerbar { height:14px; background:#eef2f8; border-radius:999px; overflow:hidden; }
+  .timerbar > i { display:block; height:100%; background:linear-gradient(90deg,#18b26b,#7ee0a6); transition:width .25s linear; }
+  .timerbar.warn > i { background:linear-gradient(90deg,#ff9f1c,#ffd27a); }
+  .timerbar.danger > i { background:linear-gradient(90deg,#e8483d,#ff9a90); }
+  .qcard { text-align:center; }
+  .qvisual { min-height:120px; display:flex; align-items:center; justify-content:center; margin:6px 0 4px; }
+  .qvisual svg { max-height:150px; max-width:100%; border-radius:10px; box-shadow:0 6px 16px rgba(20,40,80,.12); }
+  .qtext { font-size:1.35rem; font-weight:900; margin:8px 0 16px; }
+  .answers { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .ans {
+    appearance:none; font-family:inherit; cursor:pointer; text-align:left;
+    border:2px solid var(--cardEdge); background:#fbfcff; color:var(--ink);
+    padding:16px; border-radius:16px; font-weight:800; font-size:1.05rem;
+    display:flex; align-items:center; gap:10px; transition:transform .08s, border-color .12s, background .12s;
+  }
+  .ans .key { width:30px; height:30px; flex:none; border-radius:50%; background:#eef3ff; color:var(--brand);
+    display:flex; align-items:center; justify-content:center; font-weight:900; }
+  .ans:hover:not(:disabled) { border-color:var(--brand); transform:translateY(-2px); }
+  .ans:disabled { cursor:default; }
+  .ans.correct { border-color:var(--good); background:var(--goodBg); }
+  .ans.correct .key { background:var(--good); color:#fff; }
+  .ans.wrong { border-color:var(--bad); background:var(--badBg); }
+  .ans.wrong .key { background:var(--bad); color:#fff; }
+  .feedback { margin-top:14px; font-weight:900; font-size:1.05rem; min-height:1.4em; }
+  .feedback.good { color:var(--good); }
+  .feedback.bad { color:var(--bad); }
+
+  /* ---- Results ---- */
+  .result { text-align:center; }
+  .stars { font-size:2.4rem; letter-spacing:6px; margin:6px 0; }
+  .score-num { font-size:3rem; font-weight:900; }
+  .review { text-align:left; margin-top:16px; display:grid; gap:8px; }
+  .review .item { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:12px; background:#fbfcff; border:1px solid var(--cardEdge); font-weight:600; }
+  .review .item .tick { font-size:1.1rem; }
+  .review .item small { color:var(--muted); display:block; font-weight:700; }
+
+  .center { text-align:center; }
+  .muted { color:var(--muted); font-weight:600; }
+  footer { color:rgba(255,255,255,.9); text-align:center; font-size:.8rem; margin-top:16px; font-weight:600; }
+
+  /* Confetti */
+  .confetti { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:50; }
+  .confetti i { position:absolute; top:-10vh; width:10px; height:14px; opacity:.9; border-radius:2px; animation:fall linear forwards; }
+  @keyframes fall { to { transform:translateY(115vh) rotate(720deg); } }
+
+  @media (max-width:560px){
+    .age-grid { grid-template-columns:1fr; }
+    .answers { grid-template-columns:1fr; }
+    .qtext { font-size:1.15rem; }
+    .panel { padding:16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+/* ==================================================================
+   1. VISUALS — inline SVG flags & landmarks (offline, crisp).
+   ================================================================== */
+function frame(inner){ // common flag frame with border radius + subtle edge
+  return `<svg viewBox="0 0 60 40" width="120" height="80" role="img">
+    <defs><clipPath id="r"><rect width="60" height="40" rx="4"/></clipPath></defs>
+    <g clip-path="url(#r)">${inner}</g>
+    <rect x=".5" y=".5" width="59" height="39" rx="4" fill="none" stroke="rgba(0,0,0,.12)"/>
+  </svg>`;
+}
+const FLAGS = {
+  JP: frame(`<rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="11" fill="#bc002d"/>`),
+  FR: frame(`<rect width="20" height="40" fill="#0055a4"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ef4135"/>`),
+  IT: frame(`<rect width="20" height="40" fill="#009246"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ce2b37"/>`),
+  DE: frame(`<rect width="60" height="13.34" fill="#000"/><rect y="13.34" width="60" height="13.33" fill="#dd0000"/><rect y="26.67" width="60" height="13.33" fill="#ffce00"/>`),
+  NL: frame(`<rect width="60" height="13.34" fill="#ae1c28"/><rect y="13.34" width="60" height="13.33" fill="#fff"/><rect y="26.67" width="60" height="13.33" fill="#21468b"/>`),
+  IE: frame(`<rect width="20" height="40" fill="#169b62"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#ff883e"/>`),
+  NG: frame(`<rect width="20" height="40" fill="#008751"/><rect x="20" width="20" height="40" fill="#fff"/><rect x="40" width="20" height="40" fill="#008751"/>`),
+  SE: frame(`<rect width="60" height="40" fill="#006aa7"/><rect x="18" width="6" height="40" fill="#fecc00"/><rect y="17" width="60" height="6" fill="#fecc00"/>`),
+  ES: frame(`<rect width="60" height="40" fill="#c60b1e"/><rect y="10" width="60" height="20" fill="#ffc400"/><rect x="12" y="16" width="7" height="8" rx="1" fill="#c60b1e"/>`),
+  GR: frame(`${[0,1,2,3,4,5,6,7,8].map(i=>`<rect y="${i*4.44}" width="60" height="4.44" fill="${i%2? '#fff':'#0d5eaf'}"/>`).join('')}<rect width="24" height="22.2" fill="#0d5eaf"/><rect x="9.5" width="5" height="22.2" fill="#fff"/><rect y="8.6" width="24" height="5" fill="#fff"/>`),
+  IN: frame(`<rect width="60" height="13.34" fill="#ff9933"/><rect y="13.34" width="60" height="13.33" fill="#fff"/><rect y="26.67" width="60" height="13.33" fill="#138808"/><circle cx="30" cy="20" r="5.2" fill="none" stroke="#054aa6" stroke-width="1"/><circle cx="30" cy="20" r="1" fill="#054aa6"/>${Array.from({length:12}).map((_,i)=>`<line x1="30" y1="20" x2="${30+5.2*Math.cos(i*Math.PI/6)}" y2="${20+5.2*Math.sin(i*Math.PI/6)}" stroke="#054aa6" stroke-width=".5"/>`).join('')}`),
+  CN: frame(`<rect width="60" height="40" fill="#de2910"/><g fill="#ffde00"><polygon points="10,6 11.8,11.2 17,11.2 12.8,14.5 14.5,19.7 10,16.4 5.5,19.7 7.2,14.5 3,11.2 8.2,11.2"/><polygon points="20,4 20.9,6 23,6.2 21.4,7.5 21.9,9.6 20,8.4 18.4,9.4" transform="scale(.5) translate(20,3)"/></g><g fill="#ffde00"><circle cx="20" cy="5" r="1.3"/><circle cx="23" cy="9" r="1.3"/><circle cx="23" cy="14" r="1.3"/><circle cx="20" cy="18" r="1.3"/></g>`),
+  US: frame(`${[0,1,2,3,4,5,6].map(i=>`<rect y="${i*5.71}" width="60" height="2.85" fill="#b22234"/>`).join('')}<rect width="60" height="40" fill="none"/>${[0,1,2,3,4,5,6].map(i=>`<rect y="${i*5.71}" width="60" height="2.85" fill="#b22234"/><rect y="${i*5.71+2.85}" width="60" height="2.86" fill="#fff"/>`).join('')}<rect width="26" height="20" fill="#3c3b6e"/>${[0,1,2,3,4].map(r=>[0,1,2,3,4,5].map(c=>`<circle cx="${3+c*4}" cy="${3+r*4}" r=".9" fill="#fff"/>`).join('')).join('')}`),
+  GB: frame(`<rect width="60" height="40" fill="#012169"/><path d="M0,0 60,40 M60,0 0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 60,40 M60,0 0,40" stroke="#c8102e" stroke-width="3.5"/><rect x="25" width="10" height="40" fill="#fff"/><rect y="15" width="60" height="10" fill="#fff"/><rect x="27" width="6" height="40" fill="#c8102e"/><rect y="17" width="60" height="6" fill="#c8102e"/>`),
+  CA: frame(`<rect width="15" height="40" fill="#d80621"/><rect x="45" width="15" height="40" fill="#d80621"/><rect x="15" width="30" height="40" fill="#fff"/><path fill="#d80621" d="M30 9 l1.6 4.2 4.4-1.1-1.6 3.6 2.2 1 -0.4 1.3 4.1 3.4-4.6 1 .4 2.1-4.5-.6.6 4.8h-1.4l.6-4.8-4.5.6.4-2.1-4.6-1 4.1-3.4-.4-1.3 2.2-1-1.6-3.6 4.4 1.1z"/>`),
+  BR: frame(`<rect width="60" height="40" fill="#009c3b"/><polygon points="30,4 55,20 30,36 5,20" fill="#ffdf00"/><circle cx="30" cy="20" r="8" fill="#002776"/><path d="M22.5 18 A9 9 0 0 1 37.5 21.5" stroke="#fff" stroke-width="1.6" fill="none"/>`),
+  AR: frame(`<rect width="60" height="13.34" fill="#74acdf"/><rect y="13.34" width="60" height="13.33" fill="#fff"/><rect y="26.67" width="60" height="13.33" fill="#74acdf"/><circle cx="30" cy="20" r="3.4" fill="#f6b40e"/>${Array.from({length:16}).map((_,i)=>`<line x1="30" y1="20" x2="${30+5*Math.cos(i*Math.PI/8)}" y2="${20+5*Math.sin(i*Math.PI/8)}" stroke="#f6b40e" stroke-width="1"/>`).join('')}`),
+  EG: frame(`<rect width="60" height="13.34" fill="#ce1126"/><rect y="13.34" width="60" height="13.33" fill="#fff"/><rect y="26.67" width="60" height="13.33" fill="#000"/><circle cx="30" cy="20" r="3.2" fill="#c09300"/>`),
+  ZA: frame(`<rect width="60" height="20" fill="#e03c31"/><rect y="20" width="60" height="20" fill="#002395"/><polygon points="0,0 26,20 0,40" fill="#007749"/><polygon points="0,4 22,20 0,36" fill="#fff"/><polygon points="0,9 14,20 0,31" fill="#000"/><polygon points="0,0 26,20 0,40 0,36 22,20 0,4" fill="#fff"/><rect x="-1" y="14" width="61" height="12" fill="#007749"/><polygon points="0,0 26,20 0,40" fill="#007749"/><polygon points="0,5 21,20 0,35" fill="#fff"/><polygon points="0,10 13,20 0,30" fill="#000"/><g fill="#ffb915"><rect x="0" y="16" width="7" height="8" opacity="0"/></g><rect x="0" y="15" width="0" height="10"/><rect x="0" y="14.5" width="60" height="11" fill="none"/><rect x="0" y="14.5" width="9" height="11" fill="#ffb915" opacity="0"/>`),
+  KE: frame(`<rect width="60" height="40" fill="#000"/><rect y="8" width="60" height="24" fill="#fff"/><rect y="9.5" width="60" height="8" fill="#bb0000"/><rect y="9.5" width="60" height="0"/><rect y="9.6" width="60" height="7.8" fill="#bb0000"/><rect y="26" width="60" height="6" fill="#006600"/><rect y="8" width="60" height="1.5" fill="#fff"/><rect y="24.5" width="60" height="1.5" fill="#fff"/><ellipse cx="30" cy="20" rx="6" ry="9" fill="#bb0000" stroke="#fff" stroke-width="1"/><rect x="29" y="6" width="2" height="28" fill="#fff"/>`),
+  SW: frame(`<rect width="60" height="40" fill="#d52b1e"/><rect x="24" y="8" width="12" height="24" fill="#fff"/><rect x="16" y="16" width="28" height="8" fill="#fff"/>`) // Switzerland
+};
+// Age-6 famous flag set uses these codes:
+const FLAG_NAMES = {
+  JP:"Japan", FR:"France", IT:"Italy", DE:"Germany", NL:"Netherlands", IE:"Ireland",
+  NG:"Nigeria", SE:"Sweden", ES:"Spain", GR:"Greece", IN:"India", CN:"China",
+  US:"United States", GB:"United Kingdom", CA:"Canada", BR:"Brazil", AR:"Argentina",
+  EG:"Egypt", ZA:"South Africa", KE:"Kenya", SW:"Switzerland"
+};
+
+// ---- Landmark illustrations ----
+function sky(inner, grad="#bfe3ff"){
+  return `<svg viewBox="0 0 120 120" width="150" height="150" role="img">
+    <defs><linearGradient id="sk" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#eaf6ff"/><stop offset="1" stop-color="${grad}"/></linearGradient></defs>
+    <rect width="120" height="120" rx="14" fill="url(#sk)"/>
+    <circle cx="98" cy="24" r="10" fill="#ffd83d"/>
+    ${inner}</svg>`;
+}
+const LANDMARKS = {
+  eiffel: sky(`<rect x="20" y="108" width="80" height="6" fill="#7fae55"/>
+    <path d="M60 14 L74 108 L46 108 Z" fill="none" stroke="#8a5a2b" stroke-width="3"/>
+    <path d="M52 60 h16 M48 82 h24" stroke="#8a5a2b" stroke-width="3"/>
+    <path d="M50 108 Q60 78 70 108" fill="none" stroke="#8a5a2b" stroke-width="3"/>
+    <circle cx="60" cy="14" r="2.4" fill="#8a5a2b"/>`),
+  taj: sky(`<rect x="10" y="104" width="100" height="8" fill="#dfeff0"/>
+    <rect x="22" y="72" width="76" height="34" fill="#fff" stroke="#d7c9a8"/>
+    <path d="M40 72 Q60 30 80 72 Z" fill="#fff" stroke="#d7c9a8"/>
+    <circle cx="60" cy="30" r="4" fill="#f2e6c2"/><rect x="59" y="20" width="2" height="8" fill="#c9b57e"/>
+    <rect x="16" y="60" width="5" height="46" fill="#fff" stroke="#d7c9a8"/>
+    <rect x="99" y="60" width="5" height="46" fill="#fff" stroke="#d7c9a8"/>
+    <rect x="55" y="88" width="10" height="18" fill="#cbd9da"/>`),
+  liberty: sky(`<rect x="24" y="108" width="72" height="6" fill="#8fb56a"/>
+    <rect x="48" y="80" width="24" height="28" fill="#8fd6c4"/>
+    <rect x="52" y="52" width="16" height="30" rx="3" fill="#8fd6c4"/>
+    <circle cx="60" cy="44" r="9" fill="#8fd6c4"/>
+    ${Array.from({length:7}).map((_,i)=>`<rect x="60" y="30" width="1.6" height="8" fill="#8fd6c4" transform="rotate(${(i-3)*22} 60 44)"/>`).join('')}
+    <rect x="70" y="30" width="3" height="24" fill="#8fd6c4"/><path d="M68 30 h7 l-3.5 -8 z" fill="#ffb400"/>`),
+  greatwall: sky(`<path d="M6 96 Q30 60 54 82 T114 66" fill="none" stroke="#b98d5f" stroke-width="14"/>
+    <path d="M6 96 Q30 60 54 82 T114 66" fill="none" stroke="#caa274" stroke-width="8"/>
+    ${[12,34,58,82,104].map(x=>`<rect x="${x}" y="60" width="6" height="10" fill="#b98d5f"/>`).join('')}
+    <rect x="6" y="100" width="108" height="12" fill="#8fb56a"/>`),
+  pyramids: sky(`<rect x="0" y="96" width="120" height="18" fill="#e8cf94"/>
+    <polygon points="34,96 60,40 86,96" fill="#e0b866" stroke="#c99b43"/>
+    <polygon points="60,40 60,96 86,96" fill="#c99b43"/>
+    <polygon points="6,96 26,58 46,96" fill="#e0b866" stroke="#c99b43"/>
+    <polygon points="26,58 26,96 46,96" fill="#c99b43"/>`,"#f6dfa0"),
+  bigben: sky(`<rect x="24" y="108" width="72" height="6" fill="#8fb56a"/>
+    <rect x="50" y="30" width="20" height="78" fill="#d9c9a3" stroke="#b7a271"/>
+    <rect x="52" y="40" width="16" height="16" fill="#f3ecd8"/><circle cx="60" cy="48" r="6" fill="#fff" stroke="#b7a271"/>
+    <line x1="60" y1="48" x2="60" y2="44" stroke="#333"/><line x1="60" y1="48" x2="63" y2="49" stroke="#333"/>
+    <polygon points="48,30 60,14 72,30" fill="#9a8351"/><rect x="59" y="8" width="2" height="8" fill="#9a8351"/>`),
+  colosseum: sky(`<rect x="10" y="104" width="100" height="8" fill="#cdbca0"/>
+    <path d="M18 104 Q18 56 60 52 Q102 56 102 104 Z" fill="#e7d7b6" stroke="#c9b083"/>
+    ${[26,42,58,74,90].map(x=>`<rect x="${x-4}" y="66" width="8" height="14" rx="4" fill="#b89a6a"/><rect x="${x-4}" y="84" width="8" height="14" rx="4" fill="#b89a6a"/>`).join('')}`),
+  pisa: sky(`<rect x="20" y="108" width="80" height="6" fill="#8fb56a"/>
+    <g transform="rotate(9 60 108)"><rect x="50" y="34" width="20" height="74" fill="#f1ead6" stroke="#cdbb92"/>
+    ${[42,54,66,78,90].map(y=>`<rect x="50" y="${y}" width="20" height="2.5" fill="#cdbb92"/>`).join('')}
+    <rect x="50" y="30" width="20" height="6" fill="#e4d9bb" stroke="#cdbb92"/></g>`),
+  opera: sky(`<rect x="0" y="96" width="120" height="18" fill="#3aa0d6"/>
+    <path d="M12 96 Q30 52 46 96 Z" fill="#fff" stroke="#cfe0ea"/>
+    <path d="M34 96 Q54 46 74 96 Z" fill="#f2f7fb" stroke="#cfe0ea"/>
+    <path d="M62 96 Q82 56 100 96 Z" fill="#fff" stroke="#cfe0ea"/>
+    <rect x="10" y="94" width="100" height="6" fill="#d9a441"/>`,"#7fd0ef"),
+  christ: sky(`<rect x="30" y="104" width="60" height="10" fill="#8aa77a"/>
+    <rect x="44" y="88" width="32" height="18" fill="#9fb08c"/>
+    <rect x="57" y="46" width="6" height="42" fill="#dfe6dc"/>
+    <rect x="34" y="52" width="52" height="6" fill="#dfe6dc"/>
+    <circle cx="60" cy="42" r="5" fill="#dfe6dc"/>`),
+  fuji: sky(`<rect x="0" y="96" width="120" height="18" fill="#6fbf73"/>
+    <polygon points="24,96 60,34 96,96" fill="#6a8fc0"/>
+    <polygon points="46,58 60,34 74,58 68,55 60,60 52,55" fill="#fff"/>
+    <path d="M24 96 Q42 88 60 96 Q78 104 96 96" fill="#6a8fc0"/>`,"#bfe3ff")
+};
+const LANDMARK_NAMES = {
+  eiffel:"the Eiffel Tower", taj:"the Taj Mahal", liberty:"the Statue of Liberty",
+  greatwall:"the Great Wall", pyramids:"the Pyramids of Giza", bigben:"Big Ben",
+  colosseum:"the Colosseum", pisa:"the Leaning Tower of Pisa", opera:"the Sydney Opera House",
+  christ:"Christ the Redeemer", fuji:"Mount Fuji"
+};
+
+/* ==================================================================
+   2. CONTENT — questions per topic. `y:1` marks age-6 (young) cards.
+      Distractors are auto-built from each topic's answer pool, unless
+      a card supplies its own `opts` array.
+   ================================================================== */
+function fl(code){ return {type:"flag", code}; }
+function lm(id){ return {type:"landmark", id}; }
+
+const TOPICS = [
+  { id:"continents", nm:"Continents", ic:"🗺️", cards:[
+    {q:"Which is the LARGEST continent?", a:"Asia", y:1, f:"Asia is home to more people than all other continents combined!"},
+    {q:"Which continent has the Sahara Desert and the River Nile?", a:"Africa", y:1, f:"Africa has 54 countries — more than any other continent."},
+    {q:"Which is the SMALLEST continent?", a:"Australia (Oceania)", y:1, f:"It is the only continent that is also a single country."},
+    {q:"Which continent is the coldest and covered in ice?", a:"Antarctica", y:1, f:"Almost no people live here — mostly penguins and scientists!"},
+    {q:"Which continent has France, Italy and Spain?", a:"Europe", y:1, f:"Europe has many countries packed close together."},
+    {q:"Which continent has the USA, Canada and Mexico?", a:"North America", y:1, f:"It stretches from icy Canada down to sunny Mexico."},
+    {q:"Which continent has the Amazon Rainforest and Brazil?", a:"South America", y:1, f:"The Amazon Rainforest makes its own rain!"},
+  ]},
+  { id:"oceans", nm:"Oceans & Seas", ic:"🌊", cards:[
+    {q:"Which is the LARGEST and deepest ocean?", a:"Pacific Ocean", y:1, f:"It is so big it could hold every continent inside it."},
+    {q:"Which ocean lies between America, Europe and Africa?", a:"Atlantic Ocean", y:1, f:"Ships and planes cross it to travel between continents."},
+    {q:"Which ocean is south of India?", a:"Indian Ocean", y:1, f:"It is the warmest ocean in the world."},
+    {q:"Which frozen ocean is at the North Pole?", a:"Arctic Ocean", y:1, f:"It is covered in floating sea ice — home to polar bears."},
+    {q:"Which ocean surrounds Antarctica?", a:"Southern Ocean", f:"It is the youngest named ocean, agreed on in 2000."},
+    {q:"Which sea sits between Europe and Africa, near Italy and Greece?", a:"Mediterranean Sea", f:"Its name means 'middle of the land'."},
+    {q:"Which sea lies between Egypt and Saudi Arabia?", a:"Red Sea", f:"It is famous for colourful coral reefs."},
+    {q:"Which warm sea is near Jamaica, full of islands and pirate stories?", a:"Caribbean Sea", y:1, f:"Hundreds of tropical islands sit in this sea."},
+  ]},
+  { id:"countries", nm:"Countries", ic:"🏳️", cards:[
+    {q:"Which country is famous for kangaroos and koalas?", a:"Australia", y:1, f:"Kangaroos and koalas live ONLY in the wild here."},
+    {q:"Which country is shaped like a boot?", a:"Italy", y:1, f:"You can even see its 'heel' and 'toe' on a map."},
+    {q:"Which country has the most people in the world?", a:"India", f:"India is home to over 1.4 billion people."},
+    {q:"Which country built the Great Wall?", a:"China", y:1, f:"The Great Wall is thousands of kilometres long."},
+    {q:"Which country is famous for pyramids and pharaohs?", a:"Egypt", y:1, f:"The pyramids are over 4,500 years old."},
+    {q:"Which is the biggest country by area?", a:"Russia", f:"Russia is so wide it spans 11 time zones."},
+    {q:"Which country has 50 states and a red, white and blue flag?", a:"United States", y:1, f:"Each of its 50 states is like a mini-country."},
+    {q:"Which country is known for maple syrup and a maple-leaf flag?", a:"Canada", y:1, f:"Canada is the second-largest country in the world."},
+    {q:"Which country is famous for sushi and Mount Fuji?", a:"Japan", y:1, f:"Japan is made of over 6,000 islands!"},
+    {q:"Which country is famous for football and the Amazon?", a:"Brazil", y:1, f:"Brazil has won the football World Cup 5 times."},
+  ]},
+  { id:"capitals", nm:"Capitals", ic:"🏙️", cards:[
+    {q:"What is the capital of France?", a:"Paris", y:1, f:"Paris is home to the Eiffel Tower."},
+    {q:"What is the capital of Japan?", a:"Tokyo", y:1, f:"Tokyo is one of the biggest cities on Earth."},
+    {q:"What is the capital of Italy?", a:"Rome", y:1, f:"Rome has the ancient Colosseum in the middle of it."},
+    {q:"What is the capital of Egypt?", a:"Cairo", y:1, f:"The pyramids stand just outside Cairo."},
+    {q:"What is the capital of the United Kingdom?", a:"London", y:1, f:"London has Big Ben and red double-decker buses."},
+    {q:"What is the capital of the United States?", a:"Washington, D.C.", y:1, f:"The President lives here in the White House."},
+    {q:"What is the capital of China?", a:"Beijing", y:1, f:"Beijing hosted the Olympic Games twice."},
+    {q:"What is the capital of India?", a:"New Delhi", y:1, f:"New Delhi sits in the north of India."},
+    {q:"What is the capital of Canada?", a:"Ottawa", f:"Many people guess Toronto — but it's Ottawa!"},
+    {q:"What is the capital of Australia?", a:"Canberra", f:"It's Canberra, not Sydney, that is the capital."},
+    {q:"What is the capital of Brazil?", a:"Brasília", f:"Brasília was specially built to be the capital."},
+    {q:"What is the capital of Germany?", a:"Berlin", f:"Berlin once had a huge wall running through it."},
+    {q:"What is the capital of Spain?", a:"Madrid", f:"Madrid sits right in the centre of Spain."},
+    {q:"What is the capital of Russia?", a:"Moscow", f:"Moscow has the colourful Red Square."},
+  ]},
+  { id:"languages", nm:"Languages", ic:"🗣️", cards:[
+    {q:"What language do most people speak in France?", a:"French", y:1, f:"'Bonjour' means hello in French."},
+    {q:"What language do most people speak in Japan?", a:"Japanese", y:1, f:"'Konnichiwa' means hello in Japanese."},
+    {q:"What language do most people speak in Italy?", a:"Italian", y:1, f:"'Ciao' means hello (and bye!) in Italian."},
+    {q:"What language do most people speak in China?", a:"Chinese (Mandarin)", y:1, f:"More people speak Chinese than any other first language."},
+    {q:"What language do most people speak in the USA?", a:"English", y:1, f:"English is spoken all around the world."},
+    {q:"What language do most people speak in Germany?", a:"German", y:1, f:"'Hallo' means hello in German."},
+    {q:"What language do most people speak in Brazil?", a:"Portuguese", f:"Brazil is the biggest Portuguese-speaking country."},
+    {q:"What language do most people speak in Egypt?", a:"Arabic", f:"Arabic is read from right to left."},
+    {q:"What language do most people speak in Mexico?", a:"Spanish", f:"'Hola' means hello in Spanish."},
+    {q:"What language do most people speak in Russia?", a:"Russian", f:"Russian uses the Cyrillic alphabet."},
+  ]},
+  { id:"currencies", nm:"Currencies", ic:"💰", cards:[
+    {q:"What money do they use in Japan?", a:"Yen", y:1, f:"The yen symbol looks like ¥."},
+    {q:"What money do they use in the United Kingdom?", a:"Pound", y:1, f:"The pound symbol looks like £."},
+    {q:"What money do they use in the USA?", a:"Dollar", y:1, f:"The dollar symbol looks like $."},
+    {q:"What money do they use in India?", a:"Rupee", y:1, f:"The rupee symbol looks like ₹."},
+    {q:"What money do they use in France?", a:"Euro", y:1, f:"Many European countries share the euro (€)."},
+    {q:"What money do they use in China?", a:"Yuan", f:"The Chinese yuan is also called 'renminbi'."},
+    {q:"What money do they use in Russia?", a:"Ruble", f:"Russia has used the ruble for hundreds of years."},
+    {q:"What money do they use in Mexico?", a:"Peso", f:"Several countries use a 'peso'."},
+    {q:"What money do they use in Brazil?", a:"Real", f:"It's said 'hay-al' in Portuguese."},
+    {q:"What money do they use in Switzerland?", a:"Franc", f:"Switzerland kept the franc instead of the euro."},
+  ]},
+  { id:"rivers", nm:"Rivers", ic:"🏞️", cards:[
+    {q:"Which river in Egypt is usually called the longest in the world?", a:"Nile", y:1, f:"The Nile helped build ancient Egypt. (The Amazon is a close rival for longest!)"},
+    {q:"Which giant river flows through the Amazon Rainforest?", a:"Amazon", y:1, f:"It carries more water than any other river on Earth."},
+    {q:"Which river flows through London?", a:"Thames", y:1, f:"Big Ben stands right beside the Thames."},
+    {q:"Which long river flows through China?", a:"Yangtze", f:"It is the longest river in Asia."},
+    {q:"Which holy river flows through India?", a:"Ganges", f:"Millions of people live along the Ganges."},
+    {q:"Which big river flows through the middle of the USA?", a:"Mississippi", f:"Riverboats still travel along it today."},
+    {q:"Which river flows through Germany, Austria and Hungary?", a:"Danube", f:"It passes through 10 countries — a record!"},
+  ]},
+  { id:"landmarks", nm:"Landmarks", ic:"🗽", cards:[
+    {q:"In which country is this landmark?", a:"France", y:1, v:lm("eiffel"), f:"The Eiffel Tower in Paris is 330 metres tall."},
+    {q:"In which country is this landmark?", a:"India", y:1, v:lm("taj"), f:"The Taj Mahal was built as a monument of love."},
+    {q:"In which country is this landmark?", a:"United States", y:1, v:lm("liberty"), f:"The Statue of Liberty was a gift from France."},
+    {q:"In which country is this landmark?", a:"China", y:1, v:lm("greatwall"), f:"The Great Wall is the longest wall on Earth."},
+    {q:"In which country is this landmark?", a:"Egypt", y:1, v:lm("pyramids"), f:"The Pyramids of Giza are one of the ancient wonders."},
+    {q:"In which country is this landmark?", a:"United Kingdom", y:1, v:lm("bigben"), f:"Big Ben is actually the name of the giant bell inside."},
+    {q:"In which country is this landmark?", a:"Italy", v:lm("colosseum"), f:"50,000 people once watched games in the Colosseum."},
+    {q:"In which country is this leaning tower?", a:"Italy", v:lm("pisa"), f:"The Leaning Tower of Pisa tilts because of soft ground."},
+    {q:"In which country is this landmark?", a:"Australia", v:lm("opera"), f:"The Sydney Opera House looks like white sails."},
+    {q:"In which country is this statue?", a:"Brazil", v:lm("christ"), f:"Christ the Redeemer stands high above Rio de Janeiro."},
+    {q:"In which country is this snowy mountain?", a:"Japan", y:1, v:lm("fuji"), f:"Mount Fuji is Japan's tallest mountain."},
+  ]},
+  { id:"flags", nm:"Flags", ic:"🚩", cards:[
+    {q:"Which country's flag is this?", a:"Japan", y:1, v:fl("JP"), f:"The red circle stands for the rising sun."},
+    {q:"Which country's flag is this?", a:"France", y:1, v:fl("FR"), f:"Blue, white and red — the 'tricolore'."},
+    {q:"Which country's flag is this?", a:"Italy", y:1, v:fl("IT"), f:"Green, white and red stripes."},
+    {q:"Which country's flag is this?", a:"Germany", y:1, v:fl("DE"), f:"Black, red and gold bands."},
+    {q:"Which country's flag is this?", a:"United States", y:1, v:fl("US"), f:"50 stars for 50 states, 13 stripes for the first colonies."},
+    {q:"Which country's flag is this?", a:"United Kingdom", y:1, v:fl("GB"), f:"Called the 'Union Jack'."},
+    {q:"Which country's flag is this?", a:"Canada", y:1, v:fl("CA"), f:"The red maple leaf is famous worldwide."},
+    {q:"Which country's flag is this?", a:"Brazil", y:1, v:fl("BR"), f:"The words mean 'Order and Progress'."},
+    {q:"Which country's flag is this?", a:"India", y:1, v:fl("IN"), f:"The wheel in the middle is called the Ashoka Chakra."},
+    {q:"Which country's flag is this?", a:"China", y:1, v:fl("CN"), f:"One big star with four smaller stars."},
+    {q:"Which country's flag is this?", a:"Nigeria", v:fl("NG"), f:"Green stands for the land, white for peace."},
+    {q:"Which country's flag is this?", a:"Argentina", v:fl("AR"), f:"The golden 'Sun of May' shines in the centre."},
+    {q:"Which country's flag is this?", a:"Ireland", v:fl("IE"), f:"Green, white and orange stripes."},
+    {q:"Which country's flag is this?", a:"Sweden", v:fl("SE"), f:"A yellow cross on a blue background."},
+    {q:"Which country's flag is this?", a:"Greece", v:fl("GR"), f:"Blue and white stripes with a cross."},
+    {q:"Which country's flag is this?", a:"Netherlands", v:fl("NL"), f:"Red, white and blue horizontal bands."},
+    {q:"Which country's flag is this?", a:"Egypt", v:fl("EG"), f:"Red, white and black with a golden eagle."},
+    {q:"Which country's flag is this?", a:"Switzerland", v:fl("SW"), f:"A white cross on red — and it's square!"},
+  ]},
+  { id:"earth", nm:"Amazing Earth", ic:"⭐", cards:[
+    {q:"What is the TALLEST mountain on Earth?", a:"Mount Everest", y:1, opts:["Mount Everest","Mount Fuji","Kilimanjaro","The Alps"], f:"Everest is about 8,849 metres high."},
+    {q:"What is the biggest hot DESERT?", a:"Sahara Desert", y:1, opts:["Sahara Desert","Gobi Desert","Kalahari","Antarctica"], f:"The Sahara is almost as big as the whole USA."},
+    {q:"What is the biggest RAINFOREST?", a:"Amazon Rainforest", y:1, opts:["Amazon Rainforest","Congo Rainforest","Black Forest","Sherwood Forest"], f:"It makes about 20% of the world's oxygen."},
+    {q:"Which country has the MOST people?", a:"India", opts:["India","China","USA","Russia"], f:"India passed China as the most populated country."},
+    {q:"What is the largest coral reef in the world?", a:"Great Barrier Reef", opts:["Great Barrier Reef","Red Sea Reef","Maldives Reef","Coral Triangle"], f:"It's so big you can see it from space!"},
+    {q:"Which planet do we all live on?", a:"Earth", y:1, opts:["Earth","Mars","The Moon","Jupiter"], f:"Earth is the only planet known to have life."},
+    {q:"How many continents are there?", a:"Seven", y:1, opts:["Seven","Five","Ten","Three"], f:"Asia, Africa, North & South America, Antarctica, Europe, Oceania."},
+    {q:"How many oceans are there?", a:"Five", y:1, opts:["Five","Two","Seven","Ten"], f:"Pacific, Atlantic, Indian, Southern and Arctic."},
+  ]},
+];
+
+/* ==================================================================
+   3. GAME ENGINE
+   ================================================================== */
+const app = document.getElementById("app");
+const state = {
+  age:null,            // '6' or '10'
+  topic:null,          // topic object or {id:'all'}
+  view:"age",          // age | topics | learn | quiz | results
+  learnPage:0,
+  quiz:[], qIndex:0, score:0, answered:false, log:[],
+  timer:null, timeLeft:0, timePerQ:20,
+};
+
+function visualHTML(v){
+  if(!v) return "";
+  if(v.type==="flag") return FLAGS[v.code]||"";
+  if(v.type==="landmark") return LANDMARKS[v.id]||"";
+  return "";
+}
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// cards available for the chosen age within one topic
+function topicCards(topic, age){
+  const all = topic.cards;
+  return age==="6" ? all.filter(c=>c.y) : all;
+}
+// full answer pool for a topic (used to build wrong answers) — not age filtered
+function answerPool(topic){ return [...new Set(topic.cards.map(c=>c.a))]; }
+
+function buildOptions(card, topic){
+  if(card.opts) return shuffle(card.opts);
+  const pool = answerPool(topic).filter(a=>a!==card.a);
+  const distract = shuffle(pool).slice(0,3);
+  return shuffle([card.a, ...distract]);
+}
+
+// header used across screens
+function header(){
+  const who = state.age==="6" ? "Explorer age 6 & under" : state.age==="10" ? "Explorer age 10" : "";
+  return `<div class="topbar">
+    <div class="logo"><span class="globe">🌍</span> World Explorer</div>
+    <div class="spacer"></div>
+    ${state.age?`<span class="pill">${state.age==="6"?"🧸":"🚀"} ${who}</span>`:""}
+    ${state.view!=="age"?`<button class="ghost-btn" id="home">↺ Start over</button>`:""}
+  </div>`;
+}
+
+/* ---------- Screen: choose age ---------- */
+function renderAge(){
+  app.innerHTML = header() + `
+  <div class="panel">
+    <h1>Let's explore the world! 🌎</h1>
+    <p class="lead">Learn flashcards in sets of 10, then play a timed quiz. First, who is playing?</p>
+    <div class="age-grid">
+      <div class="age-card six" data-age="6">
+        <div class="emoji">🧸</div>
+        <div class="who">I'm 6 (or younger)</div>
+        <div class="desc">Big, famous places & flags. Friendly questions and a gentle timer.</div>
+      </div>
+      <div class="age-card" data-age="10">
+        <div class="emoji">🚀</div>
+        <div class="who">I'm 10</div>
+        <div class="desc">The full challenge — capitals, languages, currencies, rivers & more.</div>
+      </div>
+    </div>
+    <p class="muted center" style="margin-top:16px">Tip: grown-ups can play too — pick “I'm 10”. 🙂</p>
+  </div>` + footer();
+  app.querySelectorAll(".age-card").forEach(el=>el.onclick=()=>{ state.age=el.dataset.age; state.view="topics"; render(); });
+  wireHome();
+}
+
+/* ---------- Screen: choose topic ---------- */
+function renderTopics(){
+  const tiles = TOPICS.map(t=>{
+    const n = topicCards(t, state.age).length;
+    if(n===0) return "";
+    return `<div class="topic" data-topic="${t.id}">
+      <div class="ic">${t.ic}</div><div class="nm">${t.nm}</div>
+      <div class="ct">${n} card${n>1?"s":""}</div></div>`;
+  }).join("");
+  app.innerHTML = header() + `
+  <div class="panel">
+    <h1>Pick a topic 🧭</h1>
+    <p class="lead">Choose something to explore. Start with the cards, then take the quiz!</p>
+    <div class="grid">
+      <div class="topic all" data-topic="all">
+        <div class="ic">🌍</div><div class="nm">World Mix</div><div class="ct">a bit of everything</div>
+      </div>
+      ${tiles}
+    </div>
+  </div>` + footer();
+  app.querySelectorAll(".topic").forEach(el=>el.onclick=()=>{
+    const id = el.dataset.topic;
+    state.topic = id==="all" ? {id:"all", nm:"World Mix", ic:"🌍"} : TOPICS.find(t=>t.id===id);
+    state.learnPage = 0;
+    state.view = "learn";
+    render();
+  });
+  wireHome();
+}
+
+// gather the learn/quiz card set for current topic + age
+function currentCards(){
+  if(state.topic.id==="all"){
+    let all=[];
+    TOPICS.forEach(t=> topicCards(t, state.age).forEach(c=> all.push({...c, _topic:t})));
+    return all;
+  }
+  return topicCards(state.topic, state.age).map(c=>({...c, _topic:state.topic}));
+}
+
+/* ---------- Screen: learn (flip cards, sets of 10) ---------- */
+function renderLearn(){
+  const cards = currentCards();
+  const pageSize = 10;
+  const pages = Math.max(1, Math.ceil(cards.length/pageSize));
+  const start = state.learnPage*pageSize;
+  const slice = cards.slice(start, start+pageSize);
+  const isLast = state.learnPage >= pages-1;
+
+  const cardHTML = slice.map((c,i)=>`
+    <div class="flip" data-i="${i}">
+      <div class="flip-inner">
+        <div class="face front">
+          ${c.v?`<div class="visual">${visualHTML(c.v)}</div>`:""}
+          <div class="q">${c.q.replace("In which country is this landmark?","Where in the world?").replace("Which country's flag is this?","Whose flag?")}</div>
+          <div class="tapme">👆 tap to flip</div>
+        </div>
+        <div class="face back">
+          <div class="a">${c.a}</div>
+          <div class="fact">${c.f||""}</div>
+        </div>
+      </div>
+    </div>`).join("");
+
+  app.innerHTML = header() + `
+  <div class="panel">
+    <div class="learn-head">
+      <div>
+        <h2>${state.topic.ic} ${state.topic.nm} — learn the cards</h2>
+        <p class="muted" style="margin:2px 0 0">Set ${state.learnPage+1} of ${pages} · tap a card to see the answer</p>
+      </div>
+      <span class="setbadge">Set ${state.learnPage+1}/${pages}</span>
+    </div>
+    <div class="cards">${cardHTML}</div>
+    <div class="row between" style="margin-top:18px">
+      <button class="btn soft" id="prevSet" ${state.learnPage===0?"disabled style=opacity:.4":""}>← Back</button>
+      ${isLast
+        ? `<button class="btn green" id="startQuiz">Start the quiz! 🎯</button>`
+        : `<button class="btn" id="nextSet">Next set →</button>`}
+    </div>
+    ${isLast?`<p class="muted center" style="margin-top:12px">Seen enough? Jump into the quiz any time.</p>`
+      :`<p class="center" style="margin-top:12px"><button class="btn soft" id="skipQuiz">Skip to quiz 🎯</button></p>`}
+  </div>` + footer();
+
+  app.querySelectorAll(".flip").forEach(el=> el.onclick=()=> el.classList.toggle("flipped"));
+  const prev=app.querySelector("#prevSet"); if(prev) prev.onclick=()=>{ if(state.learnPage>0){state.learnPage--; render();} };
+  const next=app.querySelector("#nextSet"); if(next) next.onclick=()=>{ state.learnPage++; render(); };
+  const sq=app.querySelector("#startQuiz"); if(sq) sq.onclick=startQuiz;
+  const skip=app.querySelector("#skipQuiz"); if(skip) skip.onclick=startQuiz;
+  wireHome();
+}
+
+/* ---------- Quiz ---------- */
+function startQuiz(){
+  const cards = shuffle(currentCards());
+  const max = 10;
+  state.quiz = cards.slice(0, Math.min(max, cards.length)).map(c=>({
+    card:c, options:buildOptions(c, c._topic)
+  }));
+  state.qIndex=0; state.score=0; state.log=[]; state.answered=false;
+  state.timePerQ = state.age==="6" ? 25 : 15;
+  state.view="quiz";
+  render();
+}
+
+function renderQuiz(){
+  const item = state.quiz[state.qIndex];
+  const c = item.card;
+  const total = state.quiz.length;
+  const pct = Math.round((state.qIndex)/total*100);
+
+  app.innerHTML = header() + `
+  <div class="panel qcard">
+    <div class="row between" style="margin-bottom:2px">
+      <span class="muted">Question ${state.qIndex+1} of ${total}</span>
+      <span class="muted">Score: <b style="color:var(--brand)">${state.score}</b></span>
+    </div>
+    <div class="progress"><i style="width:${pct}%"></i></div>
+    <div class="timerbar" id="tbar"><i id="tfill" style="width:100%"></i></div>
+    <div class="qvisual">${c.v?visualHTML(c.v):`<div style="font-size:3rem">${(c._topic&&c._topic.ic)||"🌍"}</div>`}</div>
+    <div class="qtext">${c.q}</div>
+    <div class="answers">
+      ${item.options.map((o,i)=>`<button class="ans" data-opt="${encodeURIComponent(o)}">
+        <span class="key">${["A","B","C","D"][i]}</span><span>${o}</span></button>`).join("")}
+    </div>
+    <div class="feedback" id="fb"></div>
+    <div class="center" style="margin-top:12px"><button class="btn" id="nextQ" style="display:none">Next →</button></div>
+  </div>` + footer();
+
+  app.querySelectorAll(".ans").forEach(b=> b.onclick=()=> pickAnswer(decodeURIComponent(b.dataset.opt)));
+  startTimer();
+  wireHome();
+}
+
+function startTimer(){
+  clearInterval(state.timer);
+  state.timeLeft = state.timePerQ;
+  const fill=document.getElementById("tfill");
+  const bar=document.getElementById("tbar");
+  const tick=()=>{
+    const p = Math.max(0, state.timeLeft/state.timePerQ*100);
+    if(fill) fill.style.width = p+"%";
+    if(bar){ bar.classList.toggle("warn", p<=50 && p>25); bar.classList.toggle("danger", p<=25); }
+    if(state.timeLeft<=0){ clearInterval(state.timer); if(!state.answered) pickAnswer(null); return; }
+    state.timeLeft -= 0.1;
+  };
+  tick();
+  state.timer = setInterval(tick, 100);
+}
+
+function pickAnswer(choice){
+  if(state.answered) return;
+  state.answered = true;
+  clearInterval(state.timer);
+  const item = state.quiz[state.qIndex];
+  const correct = item.card.a;
+  const isRight = choice===correct;
+  if(isRight) state.score++;
+  state.log.push({ q:item.card.q, a:correct, chosen:choice, right:isRight, topic:item.card._topic });
+
+  app.querySelectorAll(".ans").forEach(b=>{
+    b.disabled=true;
+    const val=decodeURIComponent(b.dataset.opt);
+    if(val===correct) b.classList.add("correct");
+    else if(val===choice) b.classList.add("wrong");
+  });
+  const fb=document.getElementById("fb");
+  if(fb){
+    if(isRight){ fb.className="feedback good"; fb.textContent = pick(["🎉 Correct!","⭐ Brilliant!","✅ Yes! Well done!","👏 Spot on!"]); }
+    else if(choice===null){ fb.className="feedback bad"; fb.textContent = `⏰ Time's up! The answer is ${correct}.`; }
+    else { fb.className="feedback bad"; fb.textContent = `❌ Not quite — it's ${correct}.`; }
+  }
+  const nb=document.getElementById("nextQ");
+  if(nb){ nb.style.display="inline-block"; nb.textContent = state.qIndex< state.quiz.length-1 ? "Next →":"See my score 🏆";
+    nb.onclick=()=>{ if(state.qIndex< state.quiz.length-1){ state.qIndex++; state.answered=false; render(); } else { state.view="results"; render(); } }; }
+}
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+/* ---------- Results ---------- */
+function renderResults(){
+  const total = state.quiz.length;
+  const s = state.score;
+  const pctScore = total? s/total : 0;
+  const stars = pctScore>=0.9?5 : pctScore>=0.75?4 : pctScore>=0.5?3 : pctScore>=0.3?2 : 1;
+  const starRow = "⭐".repeat(stars) + "✩".repeat(5-stars);
+  const msg = pctScore>=0.9 ? "World Champion! 🌟 You really know your geography!"
+    : pctScore>=0.75 ? "Amazing explorer! 🌍 So close to perfect!"
+    : pctScore>=0.5 ? "Great going! 🚀 Keep exploring and you'll be a pro."
+    : "Good try! 🧭 Look at the cards again and beat your score!";
+
+  const review = state.log.map(l=>`
+    <div class="item">
+      <span class="tick">${l.right?"✅":"❌"}</span>
+      <div><div>${l.q.replace("this landmark","the landmark").replace("this flag","the flag")}</div>
+      <small>Answer: <b>${l.a}</b>${!l.right && l.chosen? ` · you chose ${l.chosen}`: !l.right? " · no answer":""}</small></div>
+    </div>`).join("");
+
+  app.innerHTML = header() + `
+  <div class="panel result">
+    <h1>Quiz complete! 🏁</h1>
+    <div class="stars">${starRow}</div>
+    <div class="score-num">${s} / ${total}</div>
+    <p class="lead" style="margin-top:6px">${msg}</p>
+    <div class="row" style="justify-content:center">
+      <button class="btn green" id="again">Play again 🔁</button>
+      <button class="btn soft" id="learnMore">Back to cards 📚</button>
+      <button class="btn soft" id="newTopic">New topic 🧭</button>
+    </div>
+    <div class="review">${review}</div>
+  </div>` + footer();
+
+  if(pctScore>=0.75) burstConfetti();
+  app.querySelector("#again").onclick=startQuiz;
+  app.querySelector("#learnMore").onclick=()=>{ state.learnPage=0; state.view="learn"; render(); };
+  app.querySelector("#newTopic").onclick=()=>{ state.view="topics"; render(); };
+  wireHome();
+}
+
+/* ---------- shared ---------- */
+function footer(){ return `<footer>🌍 World Explorer · a geography game for curious kids · works offline</footer>`; }
+function wireHome(){ const h=document.getElementById("home"); if(h) h.onclick=()=>{ clearInterval(state.timer); Object.assign(state,{age:null,topic:null,view:"age",learnPage:0,quiz:[],qIndex:0,score:0,log:[],answered:false}); render(); }; }
+
+function burstConfetti(){
+  const c=document.getElementById("confetti");
+  const colors=["#2b6cff","#7b3ff2","#18b26b","#ff9f1c","#e8483d","#00c2a8"];
+  for(let i=0;i<80;i++){
+    const s=document.createElement("i");
+    s.style.left=(Math.random()*100)+"vw";
+    s.style.background=colors[i%colors.length];
+    s.style.animationDuration=(2+Math.random()*2)+"s";
+    s.style.animationDelay=(Math.random()*0.6)+"s";
+    s.style.transform=`scale(${0.6+Math.random()})`;
+    c.appendChild(s);
+    setTimeout(()=>s.remove(), 4200);
+  }
+}
+
+function render(){
+  clearInterval(state.timer);
+  window.scrollTo(0,0);
+  switch(state.view){
+    case "age": renderAge(); break;
+    case "topics": renderTopics(); break;
+    case "learn": renderLearn(); break;
+    case "quiz": renderQuiz(); break;
+    case "results": renderResults(); break;
+    default: renderAge();
+  }
+}
+render();
+</script>
+</body>
+</html>
