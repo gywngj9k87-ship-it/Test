@@ -1,0 +1,7 @@
+{
+  "providers": ["claude", "openai"],
+  "claude": { "model": "claude-opus-5-5", "effort": "high" },
+  "openai": { "model": "gpt-5.5", "effort": "high" },
+  "maxChars": 400000,
+  "outDir": "reviews"
+}

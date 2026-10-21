@@ -1,0 +1,25 @@
+{
+  "name": "dispatch-agent",
+  "version": "1.0.0",
+  "description": "Dispatch file-review tasks to Claude and ChatGPT with configurable model and reasoning effort.",
+  "scripts": {
+    "dispatch": "node src/cli.ts",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.0.0",
+    "openai": "^7.41.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  },
+  "type": "module",
+  "private": true,
+  "bin": {
+    "dispatch": "src/cli.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}
