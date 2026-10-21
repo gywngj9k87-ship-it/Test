@@ -208,6 +208,6 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Dispatch UI running at http://localhost:${PORT}`);
   console.log(`File paths resolve against ${ROOT}`);
-  if (!process.env.ANTHROPIC_API_KEY) console.log("Note: ANTHROPIC_API_KEY is not set - Claude runs will fail.");
-  if (!process.env.OPENAI_API_KEY) console.log("Note: OPENAI_API_KEY is not set - ChatGPT runs will fail.");
+  if (!process.env.ANTHROPIC_API_KEY) console.log("Note: ANTHROPIC_API_KEY is not set (add it to .env) - Claude runs will fail.");
+  if (!process.env.OPENAI_API_KEY) console.log("Note: OPENAI_API_KEY is not set (add it to .env) - ChatGPT runs will fail.");
 });

@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Dispatch file-review tasks to Claude and ChatGPT with configurable model and reasoning effort.",
   "scripts": {
-    "dispatch": "node src/cli.ts",
-    "ui": "node src/server.ts",
+    "dispatch": "node --env-file-if-exists=.env src/cli.ts",
+    "ui": "node --env-file-if-exists=.env src/server.ts",
     "typecheck": "tsc"
   },
   "dependencies": {

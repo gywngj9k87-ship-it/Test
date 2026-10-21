@@ -11,9 +11,12 @@ Requires Node 22.18+ (runs the TypeScript directly, no build step).
 ```bash
 cd dispatch-agent
 npm install
-export ANTHROPIC_API_KEY=sk-ant-...
-export OPENAI_API_KEY=sk-...
+cp .env.example .env    # then paste your keys into .env
 ```
+
+`.env` is git-ignored, and `npm run ui` / `npm run dispatch` load it automatically.
+Exported `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` environment variables work too.
+Get keys at https://console.anthropic.com/settings/keys and https://platform.openai.com/api-keys.
 
 ## Web app
 
