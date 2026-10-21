@@ -43,3 +43,9 @@ export interface ProviderResult {
   usage: { inputTokens: number; outputTokens: number };
   durationMs: number;
 }
+
+export interface RunOptions {
+  /** Called with each chunk of answer text as it streams in. */
+  onText?: (delta: string) => void;
+  signal?: AbortSignal;
+}

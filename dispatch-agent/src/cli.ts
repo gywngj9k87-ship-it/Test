@@ -5,7 +5,8 @@ import { parseArgs } from "node:util";
 import { loadConfig } from "./config.ts";
 import { dispatch, synthesize } from "./dispatch.ts";
 import { collectFiles } from "./files.ts";
-import type { ProviderName, ProviderResult } from "./types.ts";
+import { report } from "./report.ts";
+import type { ProviderName } from "./types.ts";
 
 const HELP = `Usage: dispatch [options] <file-or-dir>...
 
@@ -32,12 +33,6 @@ Output:
   -h, --help`;
 
 const DEFAULT_TASK = "Review these files and recommend the most valuable improvements.";
-
-function report(r: ProviderResult, title: string): string {
-  const meta = `model \`${r.model}\` · effort \`${r.effort}\` · ${r.usage.inputTokens} in / ${r.usage.outputTokens} out tokens · ${(r.durationMs / 1000).toFixed(1)}s`;
-  const warn = r.warning ? `\n> **Warning:** ${r.warning}\n` : "";
-  return `# ${title}\n\n${meta}\n${warn}\n${r.text}\n`;
-}
 
 async function main(): Promise<number> {
   const { values, positionals } = parseArgs({

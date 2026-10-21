@@ -15,7 +15,30 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export OPENAI_API_KEY=sk-...
 ```
 
-## Usage
+## Web app
+
+```bash
+npm run ui                                # serves http://localhost:8700
+npm run ui -- --root ~/code/my-project    # let file paths point into another folder
+npm run ui -- --port 9000
+```
+
+Open http://localhost:8700 and:
+
+1. Write a prompt (or pick a preset: general review, bugs, security, performance, readability).
+2. Add files: type paths inside the root folder (`src/hooks, src/lib/api.js`) and press **Check**,
+   or drop files onto the page.
+3. For each agent, switch it on or off, choose the model, and choose the reasoning effort.
+4. Press **Send to agents** (Ctrl/⌘ + Enter). Both reviews stream in side by side; **Stop** cancels.
+5. Press **Merge reviews** to have Claude or ChatGPT combine them into one list.
+
+Each review can be copied or downloaded, and is also saved in `reviews/`. Your prompt, paths and
+settings are remembered in the browser.
+
+The server only listens on `localhost`, keeps the API keys on your machine, refuses paths outside
+the root folder, and rejects requests from other websites.
+
+## Command line
 
 ```bash
 # Review a folder with both providers using the defaults in dispatch.config.json
@@ -85,10 +108,13 @@ const combined = await synthesize(task, results, "claude", config);
 
 ```
 src/cli.ts               command-line entry point
+src/server.ts            local web server for the UI (streams results to the browser)
+public/index.html        the web app
 src/config.ts            defaults, config file and flag merging, validation
 src/dispatch.ts          parallel dispatch and synthesis
 src/files.ts             file collection
 src/prompt.ts            review and synthesis prompts
+src/report.ts            Markdown report formatting
 src/providers/claude.ts  Anthropic SDK call
 src/providers/openai.ts  OpenAI SDK call
 ```

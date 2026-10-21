@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ClaudeEffort, ProviderResult, ProviderSettings } from "../types.ts";
+import type { RunOptions, ClaudeEffort, ProviderResult, ProviderSettings } from "../types.ts";
 
 // Models that accept the server-side refusal fallback ("default" routing).
 const FALLBACK_MODELS = new Set(["claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"]);
@@ -10,6 +10,7 @@ export async function runClaude(
   settings: ProviderSettings<ClaudeEffort>,
   system: string,
   userMessage: string,
+  { onText, signal }: RunOptions = {},
 ): Promise<ProviderResult> {
   client ??= new Anthropic();
   const started = Date.now();
@@ -27,7 +28,8 @@ export async function runClaude(
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default" as const,
     }),
-  });
+  }, { signal });
+  if (onText) stream.on("text", (delta) => onText(delta));
   const message = await stream.finalMessage();
 
   const text = message.content

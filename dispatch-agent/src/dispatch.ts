@@ -1,17 +1,23 @@
 import { buildUserMessage, SYNTHESIS_PROMPT, SYSTEM_PROMPT } from "./prompt.ts";
 import { runClaude } from "./providers/claude.ts";
 import { runOpenAI } from "./providers/openai.ts";
-import type { DispatchConfig, ProviderName, ProviderResult, Task } from "./types.ts";
+import type { DispatchConfig, ProviderName, ProviderResult, RunOptions, Task } from "./types.ts";
 
 export interface DispatchOutcome {
   results: ProviderResult[];
   errors: { provider: ProviderName; error: Error }[];
 }
 
-function run(provider: ProviderName, config: DispatchConfig, system: string, user: string) {
+export function run(
+  provider: ProviderName,
+  config: DispatchConfig,
+  system: string,
+  user: string,
+  options?: RunOptions,
+) {
   return provider === "claude"
-    ? runClaude(config.claude, system, user)
-    : runOpenAI(config.openai, system, user);
+    ? runClaude(config.claude, system, user, options)
+    : runOpenAI(config.openai, system, user, options);
 }
 
 /** Sends the same task to every configured provider in parallel. One failing doesn't cancel the others. */
@@ -35,10 +41,11 @@ export async function synthesize(
   results: ProviderResult[],
   by: ProviderName,
   config: DispatchConfig,
+  options?: RunOptions,
 ): Promise<ProviderResult> {
   const reviews = results
     .map((r) => `<review reviewer="${r.provider} (${r.model}, effort ${r.effort})">\n${r.text}\n</review>`)
     .join("\n\n");
   const user = `${buildUserMessage(task)}\n\n<reviews>\n${reviews}\n</reviews>`;
-  return run(by, config, SYNTHESIS_PROMPT, user);
+  return run(by, config, SYNTHESIS_PROMPT, user, options);
 }

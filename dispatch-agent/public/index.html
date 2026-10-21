@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dispatch</title>
+<link rel="icon" href="data:,">
+<script src="/vendor/marked.min.js"></script>
+<script src="/vendor/purify.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f6f4; --surface: #ffffff; --surface-2: #f0efec; --border: #e2e0db;
+    --text: #1d1c1a; --muted: #6b6862; --accent: #2f5bd3; --accent-text: #ffffff;
+    --claude: #c96442; --openai: #10a37f; --danger: #c0392b; --warn-bg: #fff6e0; --warn: #8a5a00;
+    --code-bg: #f3f2ef; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 2px 8px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161615; --surface: #1f1f1d; --surface-2: #2a2a27; --border: #363632;
+      --text: #ecebe8; --muted: #9c9a94; --accent: #7a9bff; --accent-text: #0e1220;
+      --claude: #e08a6a; --openai: #3cc9a1; --danger: #ff7a6b; --warn-bg: #3a2f14; --warn: #f3c56b;
+      --code-bg: #262624; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161615; --surface: #1f1f1d; --surface-2: #2a2a27; --border: #363632;
+    --text: #ecebe8; --muted: #9c9a94; --accent: #7a9bff; --accent-text: #0e1220;
+    --claude: #e08a6a; --openai: #3cc9a1; --danger: #ff7a6b; --warn-bg: #3a2f14; --warn: #f3c56b;
+    --code-bg: #262624; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+  header p { margin: 0; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; box-shadow: var(--shadow); }
+  .label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+  textarea, input[type=text], select {
+    width: 100%; font: inherit; color: var(--text); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  textarea { min-height: 110px; resize: vertical; }
+  textarea:focus, input:focus, select:focus, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px; }
+  .compose { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compose > .prompt { grid-column: 1 / -1; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; }
+  .chip:hover { border-color: var(--accent); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .btn { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .btn.small { font-size: 13px; padding: 4px 10px; font-weight: 500; }
+  .drop { margin-top: 10px; border: 1.5px dashed var(--border); border-radius: 8px; padding: 12px;
+    text-align: center; color: var(--muted); font-size: 14px; cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--text); }
+  .file-list { list-style: none; margin: 10px 0 0; padding: 0; max-height: 160px; overflow: auto; font-size: 13px; }
+  .file-list li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0;
+    border-bottom: 1px solid var(--border); }
+  .file-list code { overflow-wrap: anywhere; }
+  .file-list button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
+  .hint.error { color: var(--danger); }
+  .providers { display: grid; gap: 12px; }
+  .provider { border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .provider.off { opacity: .55; }
+  .provider h3 { margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px; flex: 1; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .claude .dot { background: var(--claude); } .openai .dot { background: var(--openai); }
+  .provider .grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button { font: inherit; font-size: 13px; padding: 4px 9px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .seg button[aria-pressed=true] { background: var(--text); color: var(--surface); border-color: var(--text); }
+  .key { font-size: 12px; color: var(--muted); }
+  .key.missing { color: var(--danger); }
+  .toggle { position: relative; width: 36px; height: 20px; flex: none; }
+  .toggle input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: absolute; z-index: 1; }
+  .toggle span { position: absolute; inset: 0; border-radius: 999px; background: var(--border); transition: .15s; }
+  .toggle span::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; transition: .15s; }
+  .toggle input:checked + span { background: var(--accent); }
+  .toggle input:checked + span::after { transform: translateX(16px); }
+  .toggle input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .actions { display: flex; gap: 8px; align-items: center; margin: 16px 0; flex-wrap: wrap; }
+  .actions .hint { margin: 0; }
+  .results { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .results.single { grid-template-columns: 1fr; }
+  .result { display: flex; flex-direction: column; min-height: 220px; }
+  .result-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .result-head h2 { font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px; flex: 1; }
+  .meta { font-size: 12px; color: var(--muted); padding-top: 8px; }
+  .status { font-size: 12px; color: var(--muted); }
+  .status.live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); margin-right: 6px; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .warn { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 8px 10px;
+    font-size: 13px; margin-top: 10px; }
+  .err { color: var(--danger); font-size: 14px; margin-top: 10px; }
+  .body { overflow-wrap: anywhere; padding-top: 4px; }
+  .body.empty { color: var(--muted); font-size: 14px; padding-top: 16px; }
+  .body h1, .body h2, .body h3 { font-size: 16px; margin: 18px 0 6px; }
+  .body pre { background: var(--code-bg); padding: 10px; border-radius: 8px; overflow: auto; font-size: 13px; }
+  .body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+  .body :not(pre) > code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+  .body table { border-collapse: collapse; display: block; overflow: auto; }
+  .body td, .body th { border: 1px solid var(--border); padding: 4px 8px; }
+  .body .raw { white-space: pre-wrap; }
+  .merge { margin-top: 16px; }
+  .merge .row { flex-wrap: wrap; }
+  .merge select { width: auto; }
+  @media (max-width: 860px) {
+    .compose, .results { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Dispatch</h1>
+    <p>Send one prompt to Claude and ChatGPT, and compare their reviews side by side.</p>
+  </header>
+
+  <section class="compose">
+    <div class="card prompt">
+      <label class="label" for="prompt">Prompt</label>
+      <textarea id="prompt" placeholder="e.g. Review these files for bugs and suggest the most valuable fixes."></textarea>
+      <div class="chips" id="presets"></div>
+    </div>
+
+    <div class="card">
+      <label class="label" for="paths">Files</label>
+      <div class="row">
+        <input type="text" id="paths" placeholder="src/hooks, src/lib/api.js">
+        <button class="btn small" id="check">Check</button>
+      </div>
+      <div class="hint" id="root-hint"></div>
+      <div class="drop" id="drop" tabindex="0" role="button">Or drop files here / click to choose</div>
+      <input type="file" id="picker" multiple hidden>
+      <ul class="file-list" id="file-list"></ul>
+      <div class="hint" id="file-hint"></div>
+    </div>
+
+    <div class="card providers" id="providers"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" id="run">Send to agents</button>
+    <button class="btn" id="stop" hidden>Stop</button>
+    <span class="hint">Ctrl/⌘ + Enter to send · reports are also saved in <code>reviews/</code></span>
+  </div>
+
+  <section class="results" id="results"></section>
+
+  <section class="card merge" id="merge" hidden>
+    <div class="row">
+      <span class="label" style="margin:0;flex:1">Combined review</span>
+      <label for="merger" class="hint" style="margin:0">Merge with</label>
+      <select id="merger"><option value="claude">Claude</option><option value="openai">ChatGPT</option></select>
+      <button class="btn" id="merge-btn">Merge reviews</button>
+    </div>
+    <div id="merge-out"></div>
+  </section>
+</main>
+
+<script>
+const PROVIDERS = {
+  claude: { name: "Claude", models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-fable-5-1"] },
+  openai: { name: "ChatGPT", models: ["gpt-5.5", "gpt-5.4-mini", "gpt-5.4-nano"] },
+};
+const PRESETS = {
+  "General review": "Review these files and recommend the most valuable improvements.",
+  "Find bugs": "Find bugs, edge cases and error-handling gaps in these files. For each, explain how it fails and how to fix it.",
+  "Security": "Review these files for security issues (injection, secrets, unsafe input handling, auth). Rank by severity.",
+  "Performance": "Identify performance problems in these files and suggest concrete optimizations.",
+  "Readability": "Suggest changes that would make these files easier to read and maintain, without changing behavior.",
+};
+
+const $ = (s) => document.querySelector(s);
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem("dispatch:" + k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("dispatch:" + k, JSON.stringify(v)); } catch {} },
+};
+const state = { cfg: null, uploads: [], settings: {}, results: {}, controllers: [] };
+
+function esc(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function renderMarkdown(el, text) {
+  if (window.marked && window.DOMPurify) el.innerHTML = DOMPurify.sanitize(marked.parse(text));
+  else el.innerHTML = `<div class="raw">${esc(text)}</div>`;
+}
+
+// ---------- setup ----------
+async function init() {
+  const res = await fetch("/api/config");
+  state.cfg = await res.json();
+  $("#root-hint").textContent = `Comma-separated paths inside ${state.cfg.root}`;
+
+  for (const [label, text] of Object.entries(PRESETS)) {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = label;
+    b.onclick = () => { $("#prompt").value = text; save(); $("#prompt").focus(); };
+    $("#presets").append(b);
+  }
+
+  $("#prompt").value = store.get("prompt", "");
+  $("#paths").value = store.get("paths", "");
+  for (const p of Object.keys(PROVIDERS)) {
+    const saved = store.get("provider:" + p, {});
+    state.settings[p] = {
+      enabled: saved.enabled ?? true,
+      model: saved.model ?? state.cfg[p].model,
+      effort: state.cfg[p].efforts.includes(saved.effort) ? saved.effort : state.cfg[p].effort,
+    };
+    renderProvider(p);
+  }
+  $("#prompt").oninput = save; $("#paths").oninput = save;
+  if ($("#paths").value) checkFiles();
+}
+
+function save() {
+  store.set("prompt", $("#prompt").value);
+  store.set("paths", $("#paths").value);
+  for (const p of Object.keys(PROVIDERS)) store.set("provider:" + p, state.settings[p]);
+}
+
+function renderProvider(p) {
+  const s = state.settings[p], cfg = state.cfg[p], info = PROVIDERS[p];
+  let el = document.getElementById("prov-" + p);
+  if (!el) { el = document.createElement("div"); el.id = "prov-" + p; $("#providers").append(el); }
+  el.className = `provider ${p}${s.enabled ? "" : " off"}`;
+  el.innerHTML = `
+    <div class="row">
+      <h3><span class="dot"></span>${info.name}</h3>
+      <span class="key ${cfg.hasKey ? "" : "missing"}">${cfg.hasKey ? "key found" : "no API key detected"}</span>
+      <label class="toggle" title="Include ${info.name}"><input type="checkbox" ${s.enabled ? "checked" : ""} aria-label="Include ${info.name}"><span></span></label>
+    </div>
+    <div class="grid">
+      <div>
+        <label class="label" for="model-${p}">Model</label>
+        <input type="text" id="model-${p}" list="models-${p}" value="${esc(s.model)}">
+        <datalist id="models-${p}">${info.models.map((m) => `<option value="${m}">`).join("")}</datalist>
+      </div>
+      <div>
+        <span class="label">Reasoning effort</span>
+        <div class="seg" role="group" aria-label="${info.name} effort">
+          ${cfg.efforts.map((e) => `<button type="button" data-effort="${e}" aria-pressed="${e === s.effort}">${e}</button>`).join("")}
+        </div>
+        ${p === "openai" ? `<div class="hint">Available levels depend on the model.</div>` : ""}
+      </div>
+    </div>`;
+  el.querySelector("input[type=checkbox]").onchange = (e) => { s.enabled = e.target.checked; save(); renderProvider(p); };
+  el.querySelector(`#model-${p}`).oninput = (e) => { s.model = e.target.value.trim(); save(); };
+  el.querySelectorAll("[data-effort]").forEach((b) => b.onclick = () => { s.effort = b.dataset.effort; save(); renderProvider(p); });
+}
+
+// ---------- files ----------
+function diskPaths() { return $("#paths").value.split(/[,\n]/).map((s) => s.trim()).filter(Boolean); }
+
+let diskFiles = [];
+async function checkFiles() {
+  const hint = $("#file-hint");
+  hint.className = "hint";
+  if (!diskPaths().length) { diskFiles = []; renderFiles(); return; }
+  hint.textContent = "Checking…";
+  const res = await post("/api/files", { paths: diskPaths() });
+  const data = await res.json();
+  if (!res.ok) { diskFiles = []; renderFiles(); hint.className = "hint error"; hint.textContent = data.error; return; }
+  diskFiles = data.files;
+  renderFiles();
+}
+
+function renderFiles() {
+  const list = $("#file-list");
+  list.innerHTML = "";
+  for (const f of diskFiles) list.insertAdjacentHTML("beforeend", `<li><code>${esc(f.path)}</code><span class="hint" style="margin:0">${f.chars.toLocaleString()}</span></li>`);
+  state.uploads.forEach((f, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<code>${esc(f.path)}</code><span><span class="hint" style="margin:0">${f.content.length.toLocaleString()}</span> <button aria-label="Remove ${esc(f.path)}">×</button></span>`;
+    li.querySelector("button").onclick = () => { state.uploads.splice(i, 1); renderFiles(); };
+    list.append(li);
+  });
+  const total = diskFiles.reduce((n, f) => n + f.chars, 0) + state.uploads.reduce((n, f) => n + f.content.length, 0);
+  const count = diskFiles.length + state.uploads.length;
+  const hint = $("#file-hint");
+  if (hint.className.includes("error") && !count) return;
+  hint.className = total > state.cfg.maxChars ? "hint error" : "hint";
+  hint.textContent = count ? `${count} file${count > 1 ? "s" : ""} · ${total.toLocaleString()} of ${state.cfg.maxChars.toLocaleString()} characters` : "";
+}
+
+async function addUploads(fileList) {
+  for (const f of fileList) {
+    const text = await f.text();
+    if (text.includes("\u0000")) continue; // binary
+    state.uploads.push({ path: f.webkitRelativePath || f.name, content: text });
+  }
+  renderFiles();
+}
+
+$("#check").onclick = checkFiles;
+$("#paths").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); checkFiles(); } };
+const drop = $("#drop");
+drop.onclick = () => $("#picker").click();
+drop.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#picker").click(); } };
+$("#picker").onchange = (e) => { addUploads(e.target.files); e.target.value = ""; };
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); addUploads(e.dataTransfer.files); };
+
+// ---------- running ----------
+function post(url, body, signal) {
+  return fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal });
+}
+
+function taskBody() {
+  return { instruction: $("#prompt").value, paths: diskPaths(), uploads: state.uploads };
+}
+
+/** POSTs and reads the server-sent event stream, calling handlers per event. */
+async function stream(url, body, signal, on) {
+  const res = await post(url, body, signal);
+  if (!res.ok) { on.error((await res.json()).error); return; }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf("\n\n")) >= 0) {
+      const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+      const event = chunk.match(/^event: (.*)$/m)?.[1];
+      const data = chunk.match(/^data: (.*)$/m)?.[1];
+      if (event && data !== undefined) on[event]?.(JSON.parse(data));
+    }
+  }
+}
+
+function resultPanel(container, id, title, cls) {
+  container.insertAdjacentHTML("beforeend", `
+    <article class="card result ${cls}" id="${id}">
+      <div class="result-head">
+        <h2><span class="dot"></span>${title}</h2>
+        <span class="status live">Working…</span>
+        <button class="btn small" data-act="copy" hidden>Copy</button>
+        <button class="btn small" data-act="download" hidden>Download</button>
+      </div>
+      <div class="meta"></div>
+      <div class="body empty">Thinking - the review will stream in here.</div>
+    </article>`);
+  return document.getElementById(id);
+}
+
+/** Streams one run into a result panel. Resolves to the final result, or null if it failed or was stopped. */
+async function runInto(panel, url, body, signal, fileName) {
+  let text = "", pending = false, result = null;
+  const bodyEl = panel.querySelector(".body"), status = panel.querySelector(".status");
+  const draw = () => { pending = false; bodyEl.classList.remove("empty"); renderMarkdown(bodyEl, text); };
+  const fail = (msg) => {
+    status.className = "status"; status.textContent = "Failed";
+    panel.insertAdjacentHTML("beforeend", `<div class="err">${esc(msg)}</div>`);
+    if (!text) bodyEl.remove();
+  };
+  try {
+    await stream(url, body, signal, {
+      delta(d) { text += d; if (!pending) { pending = true; requestAnimationFrame(draw); } },
+      done(r) {
+        result = r; text = r.text; draw();
+        status.className = "status"; status.textContent = "Done";
+        const meta = panel.querySelector(".meta");
+        meta.textContent = `${r.model} · effort ${r.effort} · ${r.usage.inputTokens.toLocaleString()} in / ` +
+          `${r.usage.outputTokens.toLocaleString()} out tokens · ${(r.durationMs / 1000).toFixed(1)}s · saved to ${r.savedTo}`;
+        if (r.warning) meta.insertAdjacentHTML("afterend", `<div class="warn">${esc(r.warning)}</div>`);
+        for (const b of panel.querySelectorAll("[data-act]")) b.hidden = false;
+        panel.querySelector("[data-act=copy]").onclick = async (e) => {
+          try { await navigator.clipboard.writeText(r.text); e.target.textContent = "Copied"; }
+          catch { e.target.textContent = "Copy failed"; }
+          setTimeout(() => (e.target.textContent = "Copy"), 1500);
+        };
+        panel.querySelector("[data-act=download]").onclick = () => {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(new Blob([r.text], { type: "text/markdown" }));
+          a.download = fileName; a.click(); URL.revokeObjectURL(a.href);
+        };
+      },
+      error: fail,
+    });
+    if (!result && status.textContent === "Working…") fail("The connection closed before the review finished.");
+  } catch (e) {
+    if (e.name === "AbortError") { status.className = "status"; status.textContent = "Stopped"; }
+    else fail(e.message);
+  }
+  return result;
+}
+
+function setRunning(on) {
+  $("#run").disabled = on; $("#merge-btn").disabled = on; $("#stop").hidden = !on;
+}
+
+function settingsFor(p) { const { model, effort } = state.settings[p]; return { model, effort }; }
+
+async function send() {
+  const active = Object.keys(PROVIDERS).filter((p) => state.settings[p].enabled);
+  const hint = $("#file-hint");
+  if (!active.length) { hint.className = "hint error"; hint.textContent = "Turn on at least one agent."; return; }
+  if (!$("#prompt").value.trim()) { $("#prompt").focus(); return; }
+  if (!diskPaths().length && !state.uploads.length) {
+    hint.className = "hint error"; hint.textContent = "Add at least one file."; $("#paths").focus(); return;
+  }
+
+  state.results = {};
+  state.controllers = [];
+  $("#merge").hidden = true; $("#merge-out").innerHTML = "";
+  const container = $("#results");
+  container.innerHTML = "";
+  container.className = active.length > 1 ? "results" : "results single";
+  setRunning(true);
+
+  await Promise.all(active.map(async (p) => {
+    const ctrl = new AbortController();
+    state.controllers.push(ctrl);
+    const panel = resultPanel(container, "res-" + p, PROVIDERS[p].name, p);
+    const r = await runInto(panel, "/api/run",
+      { provider: p, settings: settingsFor(p), task: taskBody() }, ctrl.signal, `review-${p}.md`);
+    if (r) state.results[p] = r;
+  }));
+
+  setRunning(false);
+  if (Object.keys(state.results).length >= 2) $("#merge").hidden = false;
+}
+
+async function merge() {
+  const by = $("#merger").value;
+  const out = $("#merge-out");
+  out.innerHTML = "";
+  const ctrl = new AbortController();
+  state.controllers = [ctrl];
+  setRunning(true);
+  const panel = resultPanel(out, "res-merged", `Merged by ${PROVIDERS[by].name}`, by);
+  panel.style.marginTop = "12px";
+  await runInto(panel, "/api/synthesize", {
+    provider: by, settings: settingsFor(by), task: taskBody(), results: Object.values(state.results),
+  }, ctrl.signal, "review-combined.md");
+  setRunning(false);
+}
+
+$("#run").onclick = send;
+$("#merge-btn").onclick = merge;
+$("#stop").onclick = () => state.controllers.forEach((c) => c.abort());
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !$("#run").disabled) send();
+});
+init().catch((e) => {
+  $("#results").innerHTML = `<div class="card err">Could not reach the dispatch server: ${esc(e.message)}</div>`;
+});
+</script>
+</body>
+</html>

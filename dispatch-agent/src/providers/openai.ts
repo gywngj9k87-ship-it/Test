@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { OpenAIEffort, ProviderResult, ProviderSettings } from "../types.ts";
+import type { RunOptions, OpenAIEffort, ProviderResult, ProviderSettings } from "../types.ts";
 
 let client: OpenAI | undefined;
 
@@ -7,6 +7,7 @@ export async function runOpenAI(
   settings: ProviderSettings<OpenAIEffort>,
   system: string,
   userMessage: string,
+  { onText, signal }: RunOptions = {},
 ): Promise<ProviderResult> {
   client ??= new OpenAI();
   const started = Date.now();
@@ -16,7 +17,8 @@ export async function runOpenAI(
     reasoning: { effort: settings.effort },
     instructions: system,
     input: userMessage,
-  });
+  }, { signal });
+  if (onText) stream.on("response.output_text.delta", (e) => onText(e.delta));
   const response = await stream.finalResponse();
 
   const warning =
